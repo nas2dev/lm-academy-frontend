@@ -4,10 +4,11 @@ export default {
   darkMode: "class",
   content: [
     "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
   theme: {
     colors: {
+      textPrimary: '#333333',
       blue: {
         200: '#e1f5fa',
         300: '#46caeb',

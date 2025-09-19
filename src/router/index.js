@@ -5,13 +5,30 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'HomePage',
-      component: () => import('../views/LandingPage/HomePage.vue'),
-    },
-    {
-      path: '/about',
-      name: 'AboutPage',
-      component: () => import('../views/LandingPage/AboutPage.vue'),
+      name: 'DefaultLayout',
+      component: () => import('@/layouts/DefaultLayout.vue'),
+      children: [
+        {
+          path: '',
+          name: 'HomePage',
+          component: () => import('../views/LandingPage/HomePage.vue'),
+        },
+        {
+          path: 'about',
+          name: 'AboutPage',
+          component: () => import('../views/LandingPage/AboutPage.vue'),
+        },
+        {
+          path: 'privacy-policy',
+          name: 'PrivacyPolicyPage',
+          component: () => import('../views/PrivacyPolicyView.vue'),
+        },
+        {
+          path: 'terms-of-service',
+          name: 'TermsOfServicePage',
+          component: () => import('../views/TermsOfServiceView.vue'),
+        }
+      ]
     },
     {
       path: "/dashboard",
