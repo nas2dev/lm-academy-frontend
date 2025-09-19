@@ -1,3 +1,6 @@
+<script setup>
+import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
+</script>
 <template>
   <header class="bg-white shadow-md rounded-md w-full text-sm py-4 px-6">
     <!-- ========== HEADER ========== -->
@@ -77,7 +80,76 @@
         <a href="#" class="btn text-base font-medium hover:bg-blue-700" aria-current="page"
           >Upgrade to Pro</a
         >
-        <div
+        <Menu as="div" class="relative inline-flex">
+          <MenuButton class="relative cursor-pointer align-middle rounded-full">
+            <img
+              class="object-cover w-9 h-9 rounded-full"
+              src="../../../assets/images/profile/user-1.jpg"
+              alt=""
+              aria-hidden="true"
+            />
+          </MenuButton>
+          <!-- WE CAN DO SOMETHING HERE -->
+          <transition
+            enter-active-class="transition duration-000 ease-out"
+            enter-from-class="transform scale-95 opacity-0"
+            enter-to-class="transform scale-100 opacity-100"
+            leave-active-class="transition duration-75 ease-in"
+            leave-from-class="transform scale-100 opacity-100"
+            leave-to-class="transform scale-95 opacity-0"
+          >
+            <MenuItems
+              class="card absolute top-full right-0 mt-8 min-w-max w-[200px] z-[12] focus:outline-none"
+            >
+              <div class="card-body px-0 py-2">
+                <MenuItem v-slot="{ active }">
+                  <a
+                    href="javscript:void(0)"
+                    :class="[active ? 'bg-gray-200' : '']"
+                    class="flex gap-2 items-center font-medium px-4 py-1.5 text-gray-400"
+                  >
+                    <i class="ti ti-user text-xl"></i>
+                    <p class="text-sm">My Profile</p>
+                  </a>
+                </MenuItem>
+
+                <MenuItem v-slot="{ active }">
+                  <a
+                    href="javscript:void(0)"
+                    :class="[active ? 'bg-gray-200' : '']"
+                    class="flex gap-2 items-center font-medium px-4 py-1.5 text-gray-400"
+                  >
+                    <i class="ti ti-mail text-xl"></i>
+                    <p class="text-sm">My Account</p>
+                  </a>
+                </MenuItem>
+
+                <MenuItem v-slot="{ active }">
+                  <a
+                    href="javscript:void(0)"
+                    :class="[active ? 'bg-gray-200' : '']"
+                    class="flex gap-2 items-center font-medium px-4 py-1.5 text-gray-400"
+                  >
+                    <i class="ti ti-list-check text-xl"></i>
+                    <p class="text-sm">My Task</p>
+                  </a>
+                </MenuItem>
+
+                <MenuItem>
+                  <div class="px-4 mt-[7px] grid">
+                    <a
+                      href=".../../.../../pages/authentication-login.html"
+                      class="btn-outline-primary font-medium text-[15px] w-full hover:bg-blue-600 hover:text-white"
+                      >Logout</a
+                    >
+                  </div>
+                </MenuItem>
+              </div>
+            </MenuItems>
+          </transition>
+        </Menu>
+
+        <!-- <div
           class="hs-dropdown relative inline-flex [--placement:bottom-right] sm:[--trigger:hover]"
         >
           <a class="relative hs-dropdown-toggle cursor-pointer align-middle rounded-full">
@@ -87,8 +159,9 @@
               alt=""
               aria-hidden="true"
             />
-          </a>
-          <div
+          </a> -->
+
+        <!-- <div
             class="card hs-dropdown-menu transition-[opacity,margin] rounded-md duration hs-dropdown-open:opacity-100 opacity-0 mt-2 min-w-max w-[200px] hidden z-[12]"
             aria-labelledby="hs-dropdown-custom-icon-trigger"
           >
@@ -122,8 +195,8 @@
                 >
               </div>
             </div>
-          </div>
-        </div>
+          </div> -->
+        <!-- </div> -->
       </div>
     </nav>
 

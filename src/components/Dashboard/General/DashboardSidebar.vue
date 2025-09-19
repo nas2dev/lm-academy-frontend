@@ -20,14 +20,8 @@
           </li>
 
           <li class="sidebar-item" :class="{ selected: $route.name === 'DashboardPage' }">
-            <!-- <a
-              class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-              href="../../index.html"
-            >
-              <i class="ti ti-layout-dashboard ps-2 text-2xl"></i> <span>Dashboard</span>
-            </a> -->
             <router-link
-              :to="{ name: 'AboutPage' }"
+              :to="{ name: 'DashboardPage' }"
               class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
               :class="{ active: $route.name === 'DashboardPage' }"
             >
@@ -122,13 +116,14 @@
             </a>
           </li>
 
-          <li class="sidebar-item">
-            <a
+          <li class="sidebar-item" :class="{ selected: $route.name === 'SamplePage' }">
+            <router-link
+              :to="{ name: 'SamplePage' }"
               class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-              href="../../pages/sample-page.html"
+              :class="{ active: $route.name === 'SamplePage' }"
             >
               <i class="ti ti-aperture ps-2 text-2xl"></i> <span>Sample Page</span>
-            </a>
+            </router-link>
           </li>
         </ul>
       </nav>
