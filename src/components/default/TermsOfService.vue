@@ -1,5 +1,6 @@
 <template>
   <main class="container mx-auto py-10 gap-4 flex flex-col">
+    <h1 class="text-3xl font-bold text-left mb-8">Terms and Conditions</h1>
     <h1>Terms and Conditions</h1>
     <p>Last updated: September 19, 2025</p>
     <p>Please read these terms and conditions carefully before using Our Service.</p>

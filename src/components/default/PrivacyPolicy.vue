@@ -1,5 +1,6 @@
 <template>
   <main class="container mx-auto py-10 gap-4 flex flex-col">
+    <h1 class="text-3xl font-bold text-left mb-8">Privacy Policy</h1>
     <h1>Privacy Policy</h1>
     <p>Last updated: September 19, 2025</p>
     <p>

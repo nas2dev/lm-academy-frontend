@@ -1,7 +1,9 @@
-<script setup></script>
+<script setup>
+import AboutUs from '@/components/default/AboutUs.vue'
+</script>
 
 <template>
-  <div>hello from About Page</div>
+  <AboutUs />
 </template>
 
 <style></style>

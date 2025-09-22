@@ -1,3 +1,6 @@
+<script setup>
+import AuthRedirect from '@/components/Auth/General/AuthRedirect.vue'
+</script>
 <template>
   <div class="justify-center items-center w-full card lg:flex max-w-md">
     <div class="w-full card-body">
@@ -45,14 +48,7 @@
           >
         </div>
 
-        <div class="flex justify-center gap-2 items-center">
-          <p class="text-base font-semibold text-gray-400">Already have an Account?</p>
-          <a
-            href="./authentication-login.html"
-            class="text-sm font-semibold text-blue-600 hover:text-blue-700"
-            >Sign In</a
-          >
-        </div>
+        <AuthRedirect path="LoginPage" page-title="Login Page" />
       </form>
     </div>
   </div>
