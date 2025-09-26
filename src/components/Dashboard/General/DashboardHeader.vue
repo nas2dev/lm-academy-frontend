@@ -1,5 +1,17 @@
 <script setup>
+import Axios from '@/utils/axios'
+import { ref } from 'vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
+
+const user = ref('')
+const getUserProfile = async () => {
+  const response = await Axios.get('/auth/user-profile')
+
+  console.log({ response })
+  user.value = response?.data?.user
+}
+
+getUserProfile()
 </script>
 <template>
   <header class="bg-white shadow-md rounded-md w-full text-sm py-4 px-6">
@@ -78,7 +90,7 @@ import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
       </ul>
       <div class="flex items-center gap-4">
         <a href="#" class="btn text-base font-medium hover:bg-blue-700" aria-current="page"
-          >Upgrade to Pro</a
+          >{{ user?.first_name }} {{ user?.last_name }}</a
         >
         <Menu as="div" class="relative inline-flex">
           <MenuButton class="relative cursor-pointer align-middle rounded-full">
