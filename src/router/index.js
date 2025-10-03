@@ -50,6 +50,21 @@ const router = createRouter({
           name: 'SamplePage',
           component: () => import('../views/Dashboard/SamplePage.vue'),
         },
+
+        // Admin routes
+        {
+          path: 'manage/courses',
+          name: 'AdminCoureseViewPage',
+          component: () => import('../views/Dashboard/Admin/CourseView.vue'),
+        },
+
+
+        // User routes
+        {
+          path: 'courses',
+          name: 'UserCoureseViewPage',
+          component: () => import('../views/Dashboard/User/UserCourseView.vue'),
+        },
       ]
       // krejt routes qe kan / perpara jon routes absolute
     },
@@ -69,8 +84,12 @@ const router = createRouter({
           component: () => import('../views/Auth/RegisterView.vue'),
         },
       ]
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: "NotFound",
+      component: () => import('../views/Errors/NotFound.vue')
     }
-
   ],
 })
 

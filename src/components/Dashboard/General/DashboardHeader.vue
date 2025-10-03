@@ -111,7 +111,7 @@ getUserProfile()
             leave-to-class="transform scale-95 opacity-0"
           >
             <MenuItems
-              class="card absolute top-full right-0 mt-8 min-w-max w-[200px] z-[12] focus:outline-none"
+              class="card absolute top-full right-0 mt-2 min-w-max w-[200px] z-[12] focus:outline-none"
             >
               <div class="card-body px-0 py-2">
                 <MenuItem v-slot="{ active }">
