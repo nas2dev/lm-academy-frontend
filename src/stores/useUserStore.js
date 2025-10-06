@@ -1,5 +1,6 @@
-import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { defineStore } from 'pinia'
+import { logoutUser, logoutUserSilently } from '@/utils/logout';
 
 export const useUserStore = defineStore('user', () => {
     const user = ref({})
@@ -18,10 +19,26 @@ export const useUserStore = defineStore('user', () => {
         user.value = userData
     }
 
+    async function logout(redirectToLogin = true) {
+        if (redirectToLogin) {
+            await logoutUser(true)
+        }
+        else {
+            await logoutUserSilently()
+        }
+    }
+
+    function localLogout() {
+        user.value = {};
+        localStorage.removeItem("lm-access-token");
+    }
+
     return {
         user,
         isUserLoggedIn,
         userFullName,
-        setUser
+        setUser,
+        logout,
+        localLogout
     }
 });

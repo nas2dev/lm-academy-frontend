@@ -1,17 +1,21 @@
 <script setup>
-import Axios from '@/utils/axios'
 import { ref } from 'vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
+import { useUserStore } from '@/stores/useUserStore'
 
-const user = ref('')
-const getUserProfile = async () => {
-  const response = await Axios.get('/auth/user-profile')
+const userStore = useUserStore()
+const isLoggingOut = ref(false)
 
-  console.log({ response })
-  user.value = response?.data?.user
+const handleLogout = async () => {
+  isLoggingOut.value = true
+  try {
+    await userStore.logout(true)
+  } catch (error) {
+    console.error('Error logging out', error)
+  } finally {
+    isLoggingOut.value = false
+  }
 }
-
-getUserProfile()
 </script>
 <template>
   <header class="bg-white shadow-md rounded-md w-full text-sm py-4 px-6">
@@ -89,9 +93,9 @@ getUserProfile()
         </li>
       </ul>
       <div class="flex items-center gap-4">
-        <a href="#" class="btn text-base font-medium hover:bg-blue-700" aria-current="page"
-          >{{ user?.first_name }} {{ user?.last_name }}</a
-        >
+        <a href="#" class="btn text-base font-medium hover:bg-blue-700" aria-current="page">{{
+          userStore.userFullName
+        }}</a>
         <Menu as="div" class="relative inline-flex">
           <MenuButton class="relative cursor-pointer align-middle rounded-full">
             <img
@@ -149,11 +153,13 @@ getUserProfile()
 
                 <MenuItem>
                   <div class="px-4 mt-[7px] grid">
-                    <a
-                      href=".../../.../../pages/authentication-login.html"
+                    <button
+                      type="button"
+                      @click="handleLogout"
                       class="btn-outline-primary font-medium text-[15px] w-full hover:bg-blue-600 hover:text-white"
-                      >Logout</a
                     >
+                      {{ isLoggingOut ? 'Logging out ...' : 'Logout' }}
+                    </button>
                   </div>
                 </MenuItem>
               </div>

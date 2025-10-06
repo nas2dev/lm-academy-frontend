@@ -1,5 +1,5 @@
 import Axios from "@/utils/axios"
-
+import { useUserStore } from "@/stores/useUserStore";
 
 async function refreshToken() {
     try {
@@ -13,7 +13,8 @@ async function refreshToken() {
         return newToken;
     } catch (error) {
         console.log("Refresh token error", error);
-        localStorage.removeItem('lm-access-token')
+        const userStore = useUserStore();
+        userStore.logout()
         return Promise.reject(error);
     }
 }

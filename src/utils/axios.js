@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { mirrorRequest } from './refreshToken';
-
+import { useUserStore } from "@/stores/useUserStore"
 const Axios = axios.create({
     baseURL: import.meta.env.NODE_ENV === "production" ?
         'https://learnmoreacademy.com/api' :
@@ -52,15 +52,16 @@ Axios.interceptors.response.use(
             // Handle login error first
             if (message === "Your email or password is invalid") {
                 console.log("Login error detected");
-                localStorage.removeItem('lm-access-token')
+                const userStore = useUserStore();
+                userStore.localLogout();
                 return Promise.reject(error);
             }
 
             // Handle unauthorized error
             if (message === "Unauthorized") {
                 console.log("Unauthorized error detected");
-                localStorage.removeItem('lm-access-token')
-                window.location.href = '/login'
+                const userStore = useUserStore()
+                userStore.logout(true)
                 return Promise.reject(error);
             }
 
@@ -80,8 +81,8 @@ Axios.interceptors.response.use(
 
         if (status === 500 && message === REFRESH_ERROR_MESSAGE) {
             console.log("Token has expired and can no longer be refreshed");
-            localStorage.removeItem('lm-access-token')
-            window.location.href = '/login'
+            const userStore = useUserStore()
+            userStore.logout(true)
         }
 
         return Promise.reject(error)

@@ -170,16 +170,12 @@ router.beforeEach(async (to, from, next) => {
         userStore.setUser(userData)
         user = userData
       } else {
-        localStorage.removeItem("lm-access-token");
-        // we can call here the logout method
-        window.location.href = "/login";
+        userStore.logout(true)
       }
 
     } catch (error) {
       console.error("Error fetching user: ", error);
-      localStorage.removeItem("lm-access-token");
-      // we can call here the logout method
-      window.location.href = "/login";
+      userStore.logout(true)
     }
   }
 
