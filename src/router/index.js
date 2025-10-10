@@ -131,6 +131,15 @@ const router = createRouter({
             title: "Register"
           }
         },
+        {
+          path: '/forget-password',
+          name: 'ForgetPasswordPage',
+          component: () => import('../views/Auth/ForgetPasswordView.vue'),
+          meta: {
+            unauthorized: true,
+            title: "Forget Password"
+          }
+        },
       ]
     },
     {

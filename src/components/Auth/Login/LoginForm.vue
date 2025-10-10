@@ -83,9 +83,12 @@ const handleSubmit = async () => {
     </div>
     <!-- checkbox -->
     <div class="flex justify-end">
-      <a href="../" class="text-sm font-semibold text-authBlue hover:text-blue-700"
-        >Forgot Password ?</a
+      <router-link
+        :to="{ name: 'ForgetPasswordPage' }"
+        class="text-sm font-semibold text-authBlue hover:text-blue-700"
       >
+        Forgot Password ?
+      </router-link>
     </div>
     <!-- button -->
     <div class="grid my-6">
