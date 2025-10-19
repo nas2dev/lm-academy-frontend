@@ -92,6 +92,16 @@ const router = createRouter({
             title: "Admin Course Page"
           }
         },
+        {
+          path: 'manage/users/send-invite',
+          name: 'AdminUserSendInvitePage',
+          component: () => import('../views/Dashboard/Admin/Users/SendInviteView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Admin Send Invite Page"
+          }
+        },
 
 
         // User routes
@@ -123,7 +133,7 @@ const router = createRouter({
           }
         },
         {
-          path: '/register',
+          path: '/registration',
           name: 'RegisterPage',
           component: () => import('../views/Auth/RegisterView.vue'),
           meta: {
