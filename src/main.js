@@ -7,6 +7,9 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import Toast from "vue-toastification"
+import VCalendar from 'v-calendar';
+import 'v-calendar/style.css';
+
 const app = createApp(App)
 
 app.use(createPinia())
@@ -26,4 +29,5 @@ app.use(Toast, {
     rtl: false
 })
 
+app.use(VCalendar, {})
 app.mount('#app')

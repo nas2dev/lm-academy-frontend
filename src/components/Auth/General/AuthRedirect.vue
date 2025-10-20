@@ -39,7 +39,7 @@ const handleLogout = async () => {
 <template>
   <div class="flex justify-center gap-2 items-center">
     <p class="text-base font-semibold text-gray-400">
-      {{ isLogout ? 'Already have an account?' : 'Go to' }}
+      {{ isLogout ? 'Switching Account' : 'Go to' }}
     </p>
     <router-link
       v-if="!isLogout"

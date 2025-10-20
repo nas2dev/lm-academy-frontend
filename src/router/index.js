@@ -142,6 +142,16 @@ const router = createRouter({
           }
         },
         {
+          path: '/complete-profile',
+          name: 'CompleteProfilePage',
+          component: () => import('../views/Auth/CompleteProfileView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresProfileCompletion: false,
+            title: "Complete Profile"
+          }
+        },
+        {
           path: '/forget-password',
           name: 'ForgetPasswordPage',
           component: () => import('../views/Auth/ForgetPasswordView.vue'),
