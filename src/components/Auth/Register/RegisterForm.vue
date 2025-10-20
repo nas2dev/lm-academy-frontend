@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import EyeIcon from '@/assets/fonts/feather-icons/icons/eye.svg?component'
 import EyeOffIcon from '@/assets/fonts/feather-icons/icons/eye-off.svg?component'
+import AuthRedirect from '@/components/Auth/General/AuthRedirect.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import Axios from '@/utils/axios'
@@ -276,5 +277,6 @@ const handleSubmit = async () => {
     </div>
 
     <!-- TODO: redirect -->
+    <AuthRedirect path="LoginPage" page-title="Sign In" />
   </form>
 </template>
