@@ -2,7 +2,12 @@
 import { computed, ref } from 'vue'
 import AuthRedirect from '../General/AuthRedirect.vue'
 import { useToast } from 'vue-toastification'
+import Axios from '@/utils/axios'
+import { useUserStore } from '@/stores/useUserStore'
+import { useRouter } from 'vue-router'
 
+const userStore = useUserStore()
+const router = useRouter()
 const toast = useToast()
 const isLoading = ref(false)
 
@@ -47,10 +52,72 @@ const handleImageSelect = (event) => {
     reader.readAsDataURL(file)
   }
 }
+
+const removeImage = () => {
+  profileImage.value = null
+  profileImagePreview.value = null
+}
+
+const formatDateForBackend = (date) => {
+  if (!date) return null
+
+  const d = new Date(date)
+  const year = d.getFullYear() // 2025
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const handleSubmit = async () => {
+  if (!formData.value.address || !formData.value.academicYear || !formData.value.birthday) {
+    toast.error('Please fill in all required fields')
+    return
+  }
+
+  isLoading.value = true
+  try {
+    const formDataToSend = new FormData()
+
+    formDataToSend.append('academic_year', String(formData.value.academicYear))
+    formDataToSend.append('address', formData.value.address)
+    formDataToSend.append('telephone', formData.value.telephone)
+    formDataToSend.append('date_of_birth', formatDateForBackend(formData.value.birthday))
+    formDataToSend.append('about', formData.value.about)
+
+    if (profileImage.value) {
+      formDataToSend.append('profile_image', profileImage.value)
+    }
+
+    const response = await Axios.post('/auth/complete-profile', formDataToSend, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    if (response.status === 200) {
+      toast.success('Profile completed successfully')
+
+      const updatedUser = response.data.user
+      userStore.setUser(updatedUser)
+
+      router.push({ name: 'DashboardPage' })
+    }
+  } catch (error) {
+    console.error('Complete profile error:', error)
+    const errorMessage =
+      error?.response?.data?.message ||
+      error?.response?.data?.error ||
+      'Failed to complete profile. Please try again.'
+    toast.error(errorMessage)
+  } finally {
+    isLoading.value = false
+  }
+}
 </script>
 
 <template>
-  <form>
+  <form @submit.prevent="handleSubmit">
     <div class="mb-4">
       <label for="academicYear" class="block text-sm mb-2 text-gray-400">Academic Year</label>
       <select
@@ -151,6 +218,7 @@ const handleImageSelect = (event) => {
 
         <button
           type="button"
+          @click="removeImage"
           class="inline-flex items-center px-3 py-2 border border-red-300 shadow-sm text-sm leading-4 font-medium rounded-md text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 cursor-pointer"
         >
           <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

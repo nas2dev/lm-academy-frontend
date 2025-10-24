@@ -222,6 +222,10 @@ router.beforeEach(async (to, from, next) => {
   const requiresRole = to.meta.requiresRole
   const isUnauthorizedRoute = to.meta.unauthorized
   const isVisitorRoute = to.meta.visitor
+  // for complete-profile the requiresProfileCompletion is false otherwise it's true
+  const requiresProfileCompletion = to.meta.requiresProfileCompletion !== false
+
+
 
   console.log('Route protection', {
     requiresAuth,
@@ -246,6 +250,19 @@ router.beforeEach(async (to, from, next) => {
     if (!isAuthenticated) {
       console.log("Rutes requires auth, redirecting to login")
       return next({ name: "LoginPage" });
+    }
+
+    if (requiresProfileCompletion && to.name !== "CompleteProfilePage" &&
+      (user?.profile_completed === false || user?.profile_completed === 0)
+    ) {
+      console.log("Profile not completed, redirecting to complete profile page")
+      return next({ name: "CompleteProfilePage" })
+    }
+
+
+    if (to.name === "CompleteProfilePage" && (user?.profile_completed === true || user?.profile_completed === 1)) {
+      console.log("Profile already completed, redirecting to dashboard");
+      return next({ name: "DashboardPage" })
     }
 
     if (requiresRole) {

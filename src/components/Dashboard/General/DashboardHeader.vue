@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { Menu, MenuButton, MenuItems, MenuItem } from '@headlessui/vue'
 import { useUserStore } from '@/stores/useUserStore'
+import { getProfileImageUrl } from '@/utils/backendHelper'
 
 const userStore = useUserStore()
 const isLoggingOut = ref(false)
@@ -16,6 +17,9 @@ const handleLogout = async () => {
     isLoggingOut.value = false
   }
 }
+const userProfileImage = computed(() => {
+  return getProfileImageUrl(userStore.user.image)
+})
 </script>
 <template>
   <header class="bg-white shadow-md rounded-md w-full text-sm py-4 px-6">
@@ -100,8 +104,8 @@ const handleLogout = async () => {
           <MenuButton class="relative cursor-pointer align-middle rounded-full">
             <img
               class="object-cover w-9 h-9 rounded-full"
-              src="../../../assets/images/profile/user-1.jpg"
-              alt=""
+              :src="userProfileImage"
+              :alt="userStore.userFullName || 'User Profile Image'"
               aria-hidden="true"
             />
           </MenuButton>
