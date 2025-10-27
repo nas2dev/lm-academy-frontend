@@ -29,6 +29,16 @@
 
         <li class="sidebar-item">
           <router-link
+            :to="{ name: 'AdminUsersViewPage' }"
+            class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
+            :class="{ active: $route.name === 'AdminUsersViewPage' }"
+          >
+            <i class="ti ti-users ps-2 text-2xl"></i> <span>Users</span>
+          </router-link>
+        </li>
+
+        <li class="sidebar-item">
+          <router-link
             :to="{ name: 'AdminUserSendInvitePage' }"
             class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
             :class="{ active: $route.name === 'AdminUserSendInvitePage' }"

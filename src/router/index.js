@@ -93,6 +93,16 @@ const router = createRouter({
           }
         },
         {
+          path: 'manage/users',
+          name: 'AdminUsersViewPage',
+          component: () => import('../views/Dashboard/Admin/Users/UsersView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Mange Users"
+          }
+        },
+        {
           path: 'manage/users/send-invite',
           name: 'AdminUserSendInvitePage',
           component: () => import('../views/Dashboard/Admin/Users/SendInviteView.vue'),
