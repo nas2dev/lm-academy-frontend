@@ -4,7 +4,10 @@ import { useRouter } from 'vue-router'
 import Axios from '@/utils/axios'
 import { useToast } from 'vue-toastification'
 import DataTable from '@/components/Dashboard/General/DataTable.vue'
+import { getProfileImageUrl } from '@/utils/backendHelper'
+import { useUserStore } from '@/stores/useUserStore'
 
+const userStore = useUserStore()
 const router = useRouter()
 const toast = useToast()
 
@@ -82,6 +85,37 @@ const fetchUsers = async () => {
   }
 }
 
+// Event handlers
+const handleSearch = (term) => {
+  searchTerm.value = term
+  currentPage.value = 1
+  fetchUsers()
+}
+
+const getProfileRoute = (userId) => {
+  const currentUserId = userStore.user?.id
+  if (currentUserId === userId) {
+    return 'My-profile'
+  } else {
+    return `/user-profile/${userId}`
+  }
+}
+
+const handlePerPageChange = (newPerPage) => {
+  perPage.value = newPerPage
+  currentPage.value = 1
+  fetchUsers()
+}
+
+const handlePageChange = (page) => {
+  currentPage.value = page
+  fetchUsers()
+}
+
+const handleRefresh = () => {
+  fetchUsers()
+}
+
 onMounted(() => {
   fetchUsers()
 })
@@ -96,5 +130,64 @@ onMounted(() => {
     :data="users"
     :pagination="pagination"
     search-placeholder="Search..."
-  />
+    @search="handleSearch"
+    @per-page-change="handlePerPageChange"
+    @page-change="handlePageChange"
+    @refresh="handleRefresh"
+  >
+    <!-- Custom cell templates -->
+    <template #cell-image="{ row }">
+      <img
+        :src="getProfileImageUrl(row.image)"
+        :alt="row.name"
+        class="h-10 w-10 rounded-full object-cover"
+      />
+    </template>
+
+    <template #cell-name="{ row }">
+      <div class="flex flex-col">
+        <div class="text-sm font-medium text-gray-900">{{ row.first_name }}</div>
+        <div class="text-sm font-medium text-gray-900">{{ row.last_name }}</div>
+      </div>
+    </template>
+
+    <template #cell-role="{ row }">
+      <button
+        :class="[
+          'px-14 py-3 text-sm font-medium rounded-full border-0 cursor-pointer w-20 flex items-center justify-center transition-colors duration-200',
+          row.role === 'Admin'
+            ? 'bg-[#FFF6EA] text-[#F8C076] hover:bg-[#F8C076] hover:text-[#FFF6EA]'
+            : 'bg-[#FFEDE9] text-[#FB9984] hover:bg-[#FB9984] hover:text-[#FFEDE9]',
+        ]"
+      >
+        {{ row.role }}
+      </button>
+    </template>
+
+    <template #cell-status="{ row }">
+      <button
+        :class="[
+          'px-14 py-3 text-sm font-medium rounded-full border cursor-pointer w-20 flex items-center justify-center transition-colors duration-200',
+          row.status === 'Active'
+            ? 'bg-white text-[#4BD08B] border-[#4BD08B] hover:bg-[#4BD08B] hover:text-white hover:border-[#4BD08B]'
+            : 'bg-white text-[#FB977D] border-[#FB977D] hover:bg-[#FB977D] hover:text-white hover:border-[#FB977D]',
+        ]"
+      >
+        {{ row.status }}
+      </button>
+    </template>
+
+    <template #cell-actions="{ row }">
+      <router-link
+        :to="getProfileRoute(row.id)"
+        target="_blank"
+        class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-all duration-200 group flex items-center gap-1"
+      >
+        <span>Chcek</span>
+        <span class="inline-block transition-transform duration-200 group-hover:translate-x-1"
+          >→</span
+        >
+      </router-link>
+    </template>
+  </DataTable>
 </template>

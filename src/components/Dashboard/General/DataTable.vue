@@ -40,7 +40,7 @@ const emit = defineEmits(['search', 'page-change', 'per-page-change', 'refresh']
 
 // Local state
 const searchTerm = ref('')
-const perPage = ref(props.pagination?.per_page || 10)
+const perPage = ref(props.pagination?.per_page || 5)
 
 // Debounced search
 let searchTimeout = null
@@ -49,6 +49,49 @@ const handleSearch = () => {
   searchTimeout = setTimeout(() => {
     emit('search', searchTerm.value)
   }, props.searchDebounce)
+}
+
+const getNestedValue = (obj, path) => {
+  return path.split('.').reduce((current, key) => current?.[key], obj)
+}
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= props.pagination?.last_page) {
+    emit('page-change', page)
+  }
+}
+
+const getPageNumbers = () => {
+  if (!props.pagination) return []
+
+  const current = props.pagination.current_page
+  const last = props.pagination.last_page
+  const pages = []
+
+  if (last <= 7) {
+    for (let i = 1; i <= last; i++) {
+      pages.push(i)
+    }
+  } else {
+    pages.push(1)
+    if (current > 4) pages.push('...')
+
+    const start = Math.max(2, current - 1)
+    const end = Math.min(last - 1, current + 1)
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i)
+    }
+
+    if (current < last - 3) pages.push('...')
+    pages.push(last)
+  }
+
+  return pages
+}
+
+const handlePerPageChange = () => {
+  emit('per-page-change', perPage.value)
 }
 </script>
 
@@ -128,12 +171,98 @@ const handleSearch = () => {
                 :key="column.key"
                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
               >
-                {{ row[column.key] || 'N/A' }}
+                <slot
+                  :name="`cell-${column.key}`"
+                  :row="row"
+                  :value="getNestedValue(row, column.key)"
+                >
+                  {{ getNestedValue(row, column.key) }}
+                </slot>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination -->
+      <div v-if="!loading && !error && pagination" class="flex items-center justify-between mt-6">
+        <div class="flex items-center space-x-4">
+          <span>
+            <span>{{ pagination.from || 0 }}</span
+            ><span> from </span><span>{{ pagination.total || 0 }}</span>
+          </span>
+
+          <select
+            v-model="perPage"
+            @change="handlePerPageChange"
+            class="px-4 py-2 text-sm border border-gray-300 rounded-full focus:ring-2 focus:ring-blue-500 focus:border-transparent per-page-select"
+          >
+            <option value="5">5</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+            <option value="50">50</option>
+            <option value="100">100</option>
+          </select>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <!-- Previous Page Button -->
+          <button
+            @click="goToPage(pagination.current_page - 1)"
+            :disabled="!pagination.prev_page_url"
+            class="text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed pagination-nav"
+          >
+            Previous
+          </button>
+
+          <template v-for="page in getPageNumbers()" :key="page">
+            <button
+              v-if="page !== '...'"
+              @click="goToPage(page)"
+              :class="[
+                'w-8 h-8 text-sm font-medium rounded-full flex items-center justify-center',
+                page === pagination.current_page
+                  ? 'bg-[#46C9EA] text-white shadow-md'
+                  : 'text-[#46C9EA] bg-white border border-[#46C9EA] shadow-md hover:bg-[#46C9EA] hover:text-white',
+              ]"
+            >
+              {{ page }}
+            </button>
+            <span v-else>...</span>
+          </template>
+
+          <!-- Next Page Button -->
+          <button
+            @click="goToPage(pagination.current_page + 1)"
+            :disabled="!pagination.next_page_url"
+            class="text-sm font-medium text-gray-500 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed pagination-nav"
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.per-page-select {
+  padding-right: 1.7rem;
+  text-align: center;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+}
+
+.per-page-select:open {
+  text-align: left;
+}
+
+.pagination-nav {
+  background: none;
+  border: none;
+  padding: 0;
+}
+</style>
