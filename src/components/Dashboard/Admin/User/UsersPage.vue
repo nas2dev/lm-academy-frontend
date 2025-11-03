@@ -6,6 +6,8 @@ import { useToast } from 'vue-toastification'
 import DataTable from '@/components/Dashboard/General/DataTable.vue'
 import { getProfileImageUrl } from '@/utils/backendHelper'
 import { useUserStore } from '@/stores/useUserStore'
+import RoleChangeModal from '@/components/Dashboard/Admin/User/RoleChangeModal.vue'
+import StatusChangeModal from '@/components/Dashboard/Admin/User/StatusChangeModal.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -116,6 +118,95 @@ const handleRefresh = () => {
   fetchUsers()
 }
 
+// Role Change modal state
+const showRoleModal = ref(false)
+const selectedUser = ref(null)
+const newRole = ref('')
+
+const openRoleModal = (user) => {
+  selectedUser.value = user
+  newRole.value = user.role === 'Admin' ? 'User' : 'Admin'
+  showRoleModal.value = true
+}
+
+const closeRoleModal = () => {
+  showRoleModal.value = false
+  selectedUser.value = null
+  newRole.value = ''
+}
+
+const confirmRoleChange = async () => {
+  if (!selectedUser.value) return
+
+  try {
+    const response = await Axios.post('users/change-role', {
+      user_id: selectedUser.value.id,
+      role: newRole.value,
+    })
+
+    if (response.data.success) {
+      // Update the user in the local array
+      const userIndex = users.value.findIndex((u) => u.id === selectedUser.value.id)
+      if (userIndex !== -1) {
+        users.value[userIndex].role = newRole.value
+      }
+
+      closeRoleModal()
+      toast.success('Role changed successfully')
+    } else {
+      toast.error(response.data.message || 'Failed to change role')
+      throw new Error(response.data.message || 'Failed to change role')
+    }
+  } catch (error) {
+    console.error('Error changing role:', error)
+    toast.error(error.response?.data?.message || 'Failed to change role')
+  }
+}
+
+// Status Change modal state
+const showStatusModal = ref(false)
+const selectedUserForStatus = ref(null)
+
+const openStatusModal = (user) => {
+  selectedUserForStatus.value = user
+  showStatusModal.value = true
+}
+
+const closeStatusModal = () => {
+  showStatusModal.value = false
+  selectedUserForStatus.value = null
+}
+
+const confirmStatusChange = async () => {
+  if (!selectedUserForStatus.value) return
+
+  try {
+    const newStatus = selectedUserForStatus.value.acc_status === 1 ? 0 : 1
+
+    const response = await Axios.post('users/change-status', {
+      user_id: selectedUserForStatus.value.id,
+      status: newStatus,
+    })
+
+    if (response.data.success) {
+      const userIndex = users.value.findIndex((u) => u.id === selectedUserForStatus.value.id)
+      if (userIndex !== -1) {
+        users.value[userIndex].acc_status = newStatus
+        users.value[userIndex].status = newStatus === 1 ? 'Active' : 'Inactive'
+      }
+
+      closeStatusModal()
+      toast.success('Status changed successfully')
+    } else {
+      toast.error(response.data.message || 'Failed to change status')
+      throw new Error(response.data.message || 'Failed to change status')
+    }
+  } catch (error) {
+    console.error('Error changing status:', error)
+    toast.error(error.response?.data?.message || 'Failed to change status')
+  }
+}
+
 onMounted(() => {
   fetchUsers()
 })
@@ -153,6 +244,7 @@ onMounted(() => {
 
     <template #cell-role="{ row }">
       <button
+        @click="openRoleModal(row)"
         :class="[
           'px-14 py-3 text-sm font-medium rounded-full border-0 cursor-pointer w-20 flex items-center justify-center transition-colors duration-200',
           row.role === 'Admin'
@@ -166,6 +258,7 @@ onMounted(() => {
 
     <template #cell-status="{ row }">
       <button
+        @click="openStatusModal(row)"
         :class="[
           'px-14 py-3 text-sm font-medium rounded-full border cursor-pointer w-20 flex items-center justify-center transition-colors duration-200',
           row.status === 'Active'
@@ -183,11 +276,25 @@ onMounted(() => {
         target="_blank"
         class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-all duration-200 group flex items-center gap-1"
       >
-        <span>Chcek</span>
+        <span>Check</span>
         <span class="inline-block transition-transform duration-200 group-hover:translate-x-1"
           >→</span
         >
       </router-link>
     </template>
   </DataTable>
+
+  <RoleChangeModal
+    :is-open="showRoleModal"
+    :new-role="newRole"
+    @close="closeRoleModal"
+    @confirm="confirmRoleChange"
+  />
+
+  <StatusChangeModal
+    :is-open="showStatusModal"
+    :current-status="selectedUserForStatus?.acc_status"
+    @close="closeStatusModal"
+    @confirm="confirmStatusChange"
+  />
 </template>
