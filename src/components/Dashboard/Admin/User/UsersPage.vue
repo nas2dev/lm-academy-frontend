@@ -1,6 +1,5 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import Axios from '@/utils/axios'
 import { useToast } from 'vue-toastification'
 import DataTable from '@/components/Dashboard/General/DataTable.vue'
@@ -10,7 +9,6 @@ import RoleChangeModal from '@/components/Dashboard/Admin/User/RoleChangeModal.v
 import StatusChangeModal from '@/components/Dashboard/Admin/User/StatusChangeModal.vue'
 
 const userStore = useUserStore()
-const router = useRouter()
 const toast = useToast()
 
 // State
@@ -92,15 +90,6 @@ const handleSearch = (term) => {
   searchTerm.value = term
   currentPage.value = 1
   fetchUsers()
-}
-
-const getProfileRoute = (userId) => {
-  const currentUserId = userStore.user?.id
-  if (currentUserId === userId) {
-    return 'My-profile'
-  } else {
-    return `/user-profile/${userId}`
-  }
 }
 
 const handlePerPageChange = (newPerPage) => {
@@ -204,6 +193,15 @@ const confirmStatusChange = async () => {
   } catch (error) {
     console.error('Error changing status:', error)
     toast.error(error.response?.data?.message || 'Failed to change status')
+  }
+}
+
+const getProfileRoute = (userId) => {
+  const currentUserId = userStore.user?.id
+  if (userId === currentUserId) {
+    return { name: 'UserProfilePage' }
+  } else {
+    return { name: 'UserProfileByIdPage', params: { userId } }
   }
 }
 

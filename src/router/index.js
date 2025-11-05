@@ -80,6 +80,24 @@ const router = createRouter({
             title: "Sample Page"
           }
         },
+        {
+          path: '/user-profile',
+          name: 'UserProfilePage',
+          component: () => import('../views/Dashboard/UserProfilePage.vue'),
+          meta: {
+            requiresAuth: true,
+            title: "Profile"
+          }
+        },
+        {
+          path: '/user-profile/:userId',
+          name: 'UserProfileByIdPage',
+          component: () => import('../views/Dashboard/UserProfilePage.vue'),
+          meta: {
+            requiresAuth: true,
+            title: "Profile"
+          }
+        },
 
         // Admin routes
         {

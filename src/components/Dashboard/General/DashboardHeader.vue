@@ -123,14 +123,14 @@ const userProfileImage = computed(() => {
             >
               <div class="card-body px-0 py-2">
                 <MenuItem v-slot="{ active }">
-                  <a
-                    href="javscript:void(0)"
+                  <router-link
+                    :to="{ name: 'UserProfilePage' }"
                     :class="[active ? 'bg-gray-200' : '']"
                     class="flex gap-2 items-center font-medium px-4 py-1.5 text-gray-400"
                   >
                     <i class="ti ti-user text-xl"></i>
                     <p class="text-sm">My Profile</p>
-                  </a>
+                  </router-link>
                 </MenuItem>
 
                 <MenuItem v-slot="{ active }">
