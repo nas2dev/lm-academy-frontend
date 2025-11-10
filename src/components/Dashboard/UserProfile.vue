@@ -2,7 +2,7 @@
 import { useUserStore } from '@/stores/useUserStore'
 import Axios from '@/utils/axios'
 import { useToast } from 'vue-toastification'
-import { onMounted, ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import { getProfileImageUrl } from '@/utils/backendHelper'
 import * as yup from 'yup'
@@ -82,8 +82,12 @@ const getUserProfileTitle = () => {
 }
 
 const profileSchema = yup.object({
-  first_name: yup.string().required('First name is required').max(255),
-  last_name: yup.string().required('Last name is required').max(255),
+  first_name: yup
+    .string()
+    .required('First name is required')
+    .min(2, 'First name must be at least 2 characters')
+    .max(255, 'First name must be less than 255 characters'),
+  last_name: yup.string().required('Last name is required').min(2).max(255),
   gender: yup.string().oneOf(['male', 'female', 'diverse'], 'Invalid gender'),
   academic_year: yup
     .number()
@@ -124,8 +128,121 @@ const formatDisplayDate = (date) => {
 }
 
 const onSubmit = async () => {
-  // await
-  console.log('Submitting data')
+  await saveProfile()
+}
+
+const saveProfile = async () => {
+  try {
+    loadingForm.value = true
+    const profileDate = {
+      ...editForm.value,
+      date_of_birth: formatDateForBackend(editForm.value.date_of_birth),
+    }
+
+    const response = await Axios.put(`/users/update-profile`, profileDate)
+
+    if (response.data.success) {
+      userProfile.value = response.data.user
+      userStore.setUser(response.data.user)
+      toast.success('Profile updated successfully')
+    }
+  } catch (error) {
+    console.error('Error saving profile', error)
+    const errorObj = error.response?.data?.errors
+    if (errorObj && typeof errorObj === 'object') {
+      // Instead of joining all field messages, iterate and show each individually
+      let hasErrors = false
+      for (const field in errorObj) {
+        if (Array.isArray(errorObj[field])) {
+          errorObj[field].forEach((msg) => {
+            toast.error(msg)
+            hasErrors = true
+          })
+        } else if (errorObj[field]) {
+          toast.error(errorObj[field])
+          hasErrors = true
+        }
+      }
+      error.value = hasErrors
+        ? 'Please review the highlighted errors above.'
+        : 'Failed to save profile'
+    } else {
+      error.value = 'Failed to save profile'
+      toast.error(error.value)
+    }
+  } finally {
+    loadingForm.value = false
+  }
+}
+
+const formatDateForBackend = (date) => {
+  if (!date) return null
+
+  const d = date instanceof Date ? date : new Date(date)
+  const year = d.getFullYear() // 2025
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+
+  return `${year}-${month}-${day}`
+}
+
+const uploadInputRef = ref(null)
+const imageUploading = ref(false)
+const imageDeleting = ref(false)
+
+const triggerFilePicker = () => {
+  if (imageUploading.value) return
+  uploadInputRef.value.click()
+}
+
+const handleImageSelected = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  await uploadProfileImage(file)
+  event.target.value = ''
+}
+
+const uploadProfileImage = async (file) => {
+  imageUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('profile_image', file)
+
+    const response = await Axios.post('/users/profile/image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+
+    if (response.data.success) {
+      userProfile.value.image = response.data.user.image
+      userStore.setUser(response.data.user)
+      toast.success('Profile picture uploaded successfully')
+    }
+  } catch (error) {
+    console.error('Error uploading profile image', error)
+    toast.error('Failed to upload profile image')
+  } finally {
+    imageUploading.value = false
+  }
+}
+
+const deleteProfileImage = async () => {
+  if (!userProfile.value.image || imageDeleting.value) return
+  imageDeleting.value = true
+  try {
+    const response = await Axios.delete('/users/profile/image')
+    if (response.data.success) {
+      userProfile.value.image = null
+      userStore.setUser(response.data.user)
+      toast.success('Profile picture deleted successfully')
+    }
+  } catch (error) {
+    console.error('Error deleting profile image', error)
+    toast.error('Failed to delete profile image')
+  } finally {
+    imageDeleting.value = false
+  }
 }
 </script>
 
@@ -137,7 +254,7 @@ const onSubmit = async () => {
   <div>
     <router-link
       v-if="isMyProfile"
-      :to="{ name: 'UserProfilePage' }"
+      :to="{ name: 'ChangePasswordPage' }"
       class="flex justify-end text-sm hover:text-blue-600 mr-3 mb-1 text-authBlue font-semibold"
       >Change password
     </router-link>
@@ -213,21 +330,31 @@ const onSubmit = async () => {
                       <ErrorMessage name="last_name" class="text-red-500 text-sm mt-1" />
                     </div>
 
-                    <input type="file" accept="image/*" class="hidden" ref="uploadInputRef" />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      class="hidden"
+                      ref="uploadInputRef"
+                      @change="handleImageSelected"
+                    />
 
                     <!-- Upload/delete Profile Image btns -->
                     <div v-if="isMyProfile" class="flex items-center gap-3 mb-4">
                       <button
+                        @click="triggerFilePicker"
+                        :disabled="imageUploading"
                         type="button"
                         class="text-sm flex-1 inline-flex items-center justify-center h-12 px-6 rounded-full bg-blue-600 text-white font-semibold shadow-sm hover:bg-blue-700 disabled:opacity-60"
                       >
-                        Upload Pic
+                        {{ imageUploading ? 'Uploading...' : 'Upload Pic' }}
                       </button>
                       <button
                         type="button"
                         class="text-sm flex-1 inline-flex items-center justify-center h-12 px-6 rounded-full border-2 border-orange-300 text-orange-400 font-semibold hover:bg-orange-50 hover:border-orange-400 hover:text-orange-500 disabled:opacity-50"
+                        @click="deleteProfileImage"
+                        :disabled="imageDeleting"
                       >
-                        Delete Pic
+                        {{ imageDeleting ? 'Deleting...' : 'Delete Pic' }}
                       </button>
                     </div>
                   </div>

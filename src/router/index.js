@@ -98,6 +98,15 @@ const router = createRouter({
             title: "Profile"
           }
         },
+        {
+          path: '/change-password',
+          name: 'ChangePasswordPage',
+          component: () => import('../views/Dashboard/ChangePasswordView.vue'),
+          meta: {
+            requiresAuth: true,
+            title: "Change Password"
+          }
+        },
 
         // Admin routes
         {
