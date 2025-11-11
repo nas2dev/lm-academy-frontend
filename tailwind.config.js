@@ -19,7 +19,9 @@ export default {
       },
       colors: {
         textPrimary: '#333333',
-        authBlue: "#0085DB"
+        authBlue: "#0085DB",
+        swalConfirm: "#28A745",
+        swalCancel: "#DC3545"
       }
 
     },
