@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 
 const props = defineProps({
   title: {
@@ -100,29 +100,32 @@ const handlePerPageChange = () => {
     <div class="card-body">
       <div class="flex justify-between items-center mb-6">
         <h6 class="text-lg text-gray-500 font-semibold">{{ title }}</h6>
-        <div class="relative">
-          <input
-            type="text"
-            v-model="searchTerm"
-            :placeholder="searchPlaceholder"
-            @input="handleSearch"
-            class="w-64 px-4 py-2 pl-10 pr-4 text-sm border border-gray-300 rounded-full shadow-md focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:shadow-lg transition-shadow"
-          />
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg
-              class="h-5 w-5 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
+        <div class="flex items-center gap-3">
+          <div class="relative">
+            <input
+              type="text"
+              v-model="searchTerm"
+              :placeholder="searchPlaceholder"
+              @input="handleSearch"
+              class="w-64 px-4 py-2 pl-10 pr-4 text-sm border border-gray-300 rounded-full shadow-md focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:shadow-lg transition-shadow"
+            />
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg
+                class="h-5 w-5 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </div>
           </div>
+          <slot name="header-action" />
         </div>
       </div>
 

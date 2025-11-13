@@ -120,6 +120,26 @@ const router = createRouter({
           }
         },
         {
+          path: 'manage/courses/create',
+          name: 'CreateCoursePage',
+          component: () => import('../views/Dashboard/Admin/Course/CreateCourseView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Create Course"
+          }
+        },
+        {
+          path: 'manage/courses/:courseId/edit',
+          name: 'EditCoursePage',
+          component: () => import('../views/Dashboard/Admin/Course/EditCourseView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Edit Course"
+          }
+        },
+        {
           path: 'manage/users',
           name: 'AdminUsersViewPage',
           component: () => import('../views/Dashboard/Admin/Users/UsersView.vue'),
