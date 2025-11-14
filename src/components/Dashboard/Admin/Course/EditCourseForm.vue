@@ -6,6 +6,8 @@ import * as yup from 'yup'
 import { useToast } from 'vue-toastification'
 import { getStorageUrl } from '@/utils/backendHelper'
 import ImagePlaceholderIcon from '@/assets/fonts/feather-icons/icons/image.svg?component'
+import UploadIcon from '@/assets/fonts/feather-icons/icons/attachment-line-icon.svg?component'
+import StatusToggle from '@/components/common/StatusToggle.vue'
 
 const props = defineProps({
   courseId: {
@@ -20,6 +22,7 @@ const thumbnailPreview = ref(null)
 const existingThumbnailUrl = ref(null)
 const initialValues = ref(null)
 const formKey = ref(0)
+const introVideoPreview = ref(null)
 
 const schema = yup.object({
   title: yup.string().required('Title is required').max(255),
@@ -121,34 +124,110 @@ const onSubmit = async (values, { resetForm }) => {
                 <span class="text-sm">No image selected</span>
               </div>
             </div>
-            <label
-              class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 rounded border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
-            >
-              <input
-                type="file"
-                accept="image/*"
-                class="hidden"
-                @change="handleFileChange($event, setFieldValue)"
-              />
-              Upload an Image
-              <span class="text-lg leading-none">
-                <UploadIcon />
-              </span>
-            </label>
 
-            <button
-              type="button"
-              class="w-full sm:w-60 inline-flex items-center justify-center px-6 py-2.5 rounded border border-[#FB977D] text-sm font-semibold text-white bg-[#FB977D] hover:bg-white hover:text-[#FB977D] transition disabled:opacity-60"
-              @click="
-                () => {
-                  console.log('remove thumbnail')
-                }
-              "
-            >
-              Delete Image
-            </button>
-            <ErrorMessage name="thumbnail" class="text-red-500 text-xs mt-1" />
+            <div class="flex flex-wrap items-center gap-4 w-full">
+              <div class="flex flex-col gap-3 w-full">
+                <label
+                  class="inline-flex items-center justify-center gap-2 w-full sm:w-auto px-6 py-2.5 rounded border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    @change="handleFileChange($event, setFieldValue)"
+                  />
+                  Upload an Image
+                  <span class="text-lg leading-none">
+                    <UploadIcon />
+                  </span>
+                </label>
+
+                <button
+                  type="button"
+                  class="!w-full sm:w-60 inline-flex items-center justify-center px-6 py-2.5 rounded border border-[#FB977D] text-sm font-semibold text-white bg-[#FB977D] hover:bg-white hover:text-[#FB977D] transition disabled:opacity-60"
+                  @click="
+                    () => {
+                      console.log('remove thumbnail')
+                    }
+                  "
+                >
+                  Delete Image
+                </button>
+              </div>
+              <ErrorMessage name="thumbnail" class="text-red-500 text-xs mt-1" />
+            </div>
           </div>
+
+          <div>
+            <label class="block text-sm mb-2 text-gray-400">Intro Video (optional)</label>
+            <div
+              class="mb-5 flex items-center justify-center border-2 border-dashed rounded-md min-h-[180px] bg-white"
+              :class="introVideoPreview ? 'border-blue-400' : 'border-gray-200'"
+            >
+              <video
+                v-if="introVideoPreview"
+                :src="introVideoPreview"
+                class="max-h-[170px] max-w-[300px] object-contain w-full rounded-md"
+                controls
+              />
+              <div
+                v-else
+                class="w-full sm:w-60 flex flex-col items-center justify-center text-gray-400 gap-3 py-6"
+              >
+                <UploadIcon class="w-10 h-10" />
+                <span class="text-sm">No video selected</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col items-center gap-3">
+              <label
+                class="!w-full sm:w-60 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
+              >
+                <input type="file" accept="video/*" class="hidden" />
+                Upload a Video
+                <span class="leading-none">
+                  <UploadIcon />
+                </span>
+              </label>
+
+              <button
+                type="button"
+                class="!w-full sm:w-60 inline-flex items-center justify-center px-6 py-2.5 rounded border border-[#FB977D] text-sm font-semibold text-white bg-[#FB977D] hover:bg-white hover:text-[#FB977D] transition disabled:opacity-60"
+                :disabled="!introVideoPreview"
+              >
+                Delete Video
+              </button>
+            </div>
+            <!-- <ErrorMessage name="intro_video" class="text-red-500 text-xs mt-1" /> -->
+          </div>
+        </div>
+
+        <div>
+          <Field name="status" v-slot="{ value, setValue }">
+            <StatusToggle
+              :model-value="value"
+              @update:modelValue="setValue"
+              active-label="Activate"
+              inactive-label="Deactivate"
+              :active-value="1"
+              :inactive-value="0"
+          /></Field>
+          <ErrorMessage name="status" class="text-red-500 text-xs mt-1" />
+        </div>
+
+        <div class="flex justify-end gap-3">
+          <router-link
+            :to="{ name: 'AdminCourseViewPage' }"
+            class="px-6 py-2 rounded-full border border-gray-300 text-gray-600 hover:bg-gray-50"
+            >Cancel</router-link
+          >
+          <button
+            type="submit"
+            :disabled="loading"
+            class="flex items-center gap-2 px-5 py-2 rounded-full bg-[#1F8EFA] text-white text-sm font-semibold shadow hover:bg-[#1979d6] transition disabled:opacity-60"
+          >
+            <span>{{ loading ? 'Updating...' : 'Update Course' }}</span>
+          </button>
         </div>
       </div>
     </form>

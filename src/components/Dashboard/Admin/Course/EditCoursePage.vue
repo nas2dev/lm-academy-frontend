@@ -11,7 +11,7 @@ const courseId = route.params.courseId
     <div class="flex items-center justify-between">
       <h2 class="text-2xl font-semibold text-gray-800">Edit Course</h2>
       <router-link
-        :to="{ name: 'AdminCoureseViewPage' }"
+        :to="{ name: 'AdminCourseViewPage' }"
         class="text-sm font-semibold text-[#1F8EFA] hover:text-[#1979d6]"
       >
         Modules

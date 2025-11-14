@@ -54,9 +54,9 @@
 
         <li class="sidebar-item">
           <router-link
-            :to="{ name: 'AdminCoureseViewPage' }"
+            :to="{ name: 'AdminCourseViewPage' }"
             class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-            :class="{ active: $route.name === 'AdminCoureseViewPage' }"
+            :class="{ active: $route.name === 'AdminCourseViewPage' }"
           >
             <i class="ti ti-book ps-2 text-2xl"></i> <span>Courses</span>
           </router-link>

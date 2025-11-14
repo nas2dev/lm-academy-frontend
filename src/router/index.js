@@ -111,7 +111,7 @@ const router = createRouter({
         // Admin routes
         {
           path: 'manage/courses',
-          name: 'AdminCoureseViewPage',
+          name: 'AdminCourseViewPage',
           component: () => import('../views/Dashboard/Admin/Course/CourseView.vue'),
           meta: {
             requiresAuth: true,
