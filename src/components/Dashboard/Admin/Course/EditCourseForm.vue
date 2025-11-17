@@ -8,6 +8,8 @@ import { getStorageUrl } from '@/utils/backendHelper'
 import ImagePlaceholderIcon from '@/assets/fonts/feather-icons/icons/image.svg?component'
 import UploadIcon from '@/assets/fonts/feather-icons/icons/attachment-line-icon.svg?component'
 import StatusToggle from '@/components/common/StatusToggle.vue'
+import Resumable from 'resumablejs'
+import { getBackendBaseUrl } from '@/utils/backendHelper'
 
 const props = defineProps({
   courseId: {
@@ -64,8 +66,203 @@ onMounted(() => {
 watch(() => props.courseId, fetchCourse)
 
 const onSubmit = async (values, { resetForm }) => {
-  console.log('values', values)
-  resetForm({ values: { ...initialValues } })
+  if (loading.value) return
+
+  const formData = new FormData()
+  formData.append('title', values.title)
+  formData.append('description', values.description)
+  formData.append('status', values.status)
+  formData.append('remove_thumbnail', values.remove_thumbnail ? '1' : '0')
+
+  if (values.thumbnail) {
+    formData.append('thumbnail', values.thumbnail)
+  }
+  // console.log('values', values)
+  try {
+    loading.value = true
+    const { data } = await Axios.post(`/courses/${props.courseId}?_method=PUT`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    if (!data.success) {
+      throw new Error(data?.message || 'Failed to update course')
+    }
+
+    toast.success('Course updated successfully')
+
+    initialValues.value = {
+      title: data.course.title || '',
+      description: data.course.description || '',
+      thumbnail: null,
+      removeThumbnail: false,
+      intro_video: null,
+      remove_intro_video: false,
+      status: data.course.status === 'Active' ? 1 : 0,
+    }
+
+    if (values.remove_thumbnail) {
+      existingThumbnailUrl.value = null
+      thumbnailPreview.value = null
+    } else {
+      existingThumbnailUrl.value = resolveThumbnailUrl(data.course.thumbnail)
+      thumbnailPreview.value = existingThumbnailUrl.value
+    }
+
+    resetForm({ values: { ...initialValues.value } })
+  } catch (err) {
+    console.log('err', err?.message)
+    toast.error(err.response?.data?.message || err?.message || 'Failed to update course')
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleFileChange = (event, setFieldValue, field) => {
+  const file = event.target.files[0] || null
+  if (!file) {
+    event.target.value = ''
+    return
+  }
+  setFieldValue(field, file)
+  if (field === 'thumbnail') {
+    if (thumbnailPreview.value && thumbnailPreview.value !== existingThumbnailUrl.value) {
+      URL.revokeObjectURL(thumbnailPreview.value)
+    }
+
+    thumbnailPreview.value = URL.createObjectURL(file)
+    setFieldValue('remove_thumbnail', false)
+  }
+}
+
+const handleRemoveThumbnailToggle = (checked) => {
+  if (checked) {
+    if (thumbnailPreview.value && thumbnailPreview.value !== existingThumbnailUrl.value) {
+      URL.revokeObjectURL(thumbnailPreview.value)
+    }
+    thumbnailPreview.value = null
+  } else {
+    thumbnailPreview.value = existingThumbnailUrl.value
+  }
+}
+
+// Video upload functionality
+const videoButtonText = ref('Upload a Video')
+const videoFileMessage = ref('')
+const video = ref()
+const showVideo = ref()
+const progress = ref(0)
+
+const uploadVideo = () => {
+  if (!video.value) {
+    return
+  }
+
+  resumable.opts.query = {
+    course_id: props.courseId,
+  }
+  resumable.addFile(video.value)
+  resumable.on('fileAdded', () => {
+    resumable.upload()
+  })
+}
+
+// Resumable.js instance
+const resumable = new Resumable({
+  target: `${getBackendBaseUrl()}/api/courses/${props.courseId}/upload-video`, // your backend chunk upload endpoint
+  chunkSize: 4 * 1024 * 1024, // 4MB
+  simultaneousUploads: 2, // max concurrent uploads
+  testChunks: false, // disable automatic chunk testing
+  throttleProgressCallbacks: 1,
+  query: {
+    course_id: props.courseId,
+  },
+  headers: {
+    Authorization: localStorage.getItem('lm-access-token')
+      ? `Bearer ${localStorage.getItem('lm-access-token')}`
+      : null,
+  },
+})
+
+resumable.on('fileProgress', (file) => {
+  progress.value = Math.floor(file.progress() * 100)
+})
+
+resumable.on('fileSuccess', () => {
+  toast.success('Video uploaded successfully')
+  resumable.cancel()
+
+  // Rest upload state
+  progress.value = 0
+  resetVideoInput()
+
+  // Fetch course
+  fetchCourse()
+})
+
+resumable.on('fileError', (file, message) => {
+  console.log('fileError', message)
+  toast.error(message || 'Failed to upload video')
+  progress.value = 0
+  resetVideoInput()
+})
+
+const resetVideoInput = () => {
+  video.value = null
+  showVideo.value = false
+  videoButtonText.value = 'Upload a Video'
+
+  const fileInput = document.getElementById('videoFile')
+  if (fileInput) {
+    fileInput.value = ''
+  }
+}
+
+const validateVideoFile = (event) => {
+  if (event.target.files.length > 0) {
+    const fileInput = event.target
+    const file = fileInput.files[0]
+
+    if (!file) {
+      return
+    }
+
+    const fileName = file.name
+    videoButtonText.value = fileName
+
+    const fileExtension = fileName.split('.').pop().toLowerCase()
+    const allowedExtensions = ['mp4', 'mov', 'avi', 'mkv', 'webm']
+
+    if (!allowedExtensions.includes(fileExtension)) {
+      videoFileMessage.value = 'Only MP4, MOV, AVI, MKV, and WEBM files are allowed'
+      return
+    }
+
+    const maxSizeInMB = 300 // 300MB
+    const fileSizeInMB = file.size / (1024 * 1024) // Convert size to MB
+
+    if (fileSizeInMB > maxSizeInMB) {
+      videoFileMessage.value = `The file is too large. Maximum allowed size is: ${maxSizeInMB}MB`
+      return
+    }
+
+    videoFileMessage.value = ''
+    video.value = file
+
+    showVideo.value = URL.createObjectURL(file)
+  }
+}
+
+const removeVideo = () => {
+  video.value = null
+  showVideo.value = false
+  videoButtonText.value = 'Upload a Video'
+  videoFileMessage.value = ''
+
+  const fileInput = document.getElementById('videoFile')
+  if (fileInput) {
+    fileInput.value = null
+  }
 }
 </script>
 
@@ -114,7 +311,7 @@ const onSubmit = async (values, { resetForm }) => {
                 v-if="thumbnailPreview"
                 :src="thumbnailPreview"
                 alt="Thumbnail Preview"
-                class="max-h-[170px] max-w-[300px] object-contain"
+                class="max-h-[170px] max-w-[290px] object-contain"
               />
               <div
                 v-else
@@ -134,7 +331,7 @@ const onSubmit = async (values, { resetForm }) => {
                     type="file"
                     accept="image/*"
                     class="hidden"
-                    @change="handleFileChange($event, setFieldValue)"
+                    @change="handleFileChange($event, setFieldValue, 'thumbnail')"
                   />
                   Upload an Image
                   <span class="text-lg leading-none">
@@ -147,9 +344,11 @@ const onSubmit = async (values, { resetForm }) => {
                   class="!w-full sm:w-60 inline-flex items-center justify-center px-6 py-2.5 rounded border border-[#FB977D] text-sm font-semibold text-white bg-[#FB977D] hover:bg-white hover:text-[#FB977D] transition disabled:opacity-60"
                   @click="
                     () => {
-                      console.log('remove thumbnail')
+                      setFieldValue('remove_thumbnail', true)
+                      handleRemoveThumbnailToggle(true)
                     }
                   "
+                  :disabled="!thumbnailPreview"
                 >
                   Delete Image
                 </button>
@@ -158,17 +357,19 @@ const onSubmit = async (values, { resetForm }) => {
             </div>
           </div>
 
+          <!-- Intro Video Section -->
           <div>
             <label class="block text-sm mb-2 text-gray-400">Intro Video (optional)</label>
             <div
-              class="mb-5 flex items-center justify-center border-2 border-dashed rounded-md min-h-[180px] bg-white"
-              :class="introVideoPreview ? 'border-blue-400' : 'border-gray-200'"
+              class="mb-5 flex items-center justify-center border-2 border-dashed rounded-md min-h-[180px] max-w-[300px] bg-white"
+              :class="introVideoPreview || showVideo ? 'border-blue-400' : 'border-gray-200'"
             >
               <video
-                v-if="introVideoPreview"
-                :src="introVideoPreview"
-                class="max-h-[170px] max-w-[300px] object-contain w-full rounded-md"
+                v-if="introVideoPreview || showVideo"
+                :src="introVideoPreview || showVideo"
+                class="max-h-[170px] max-w-[290px] object-contain w-full rounded-md"
                 controls
+                muted
               />
               <div
                 v-else
@@ -181,24 +382,91 @@ const onSubmit = async (values, { resetForm }) => {
 
             <div class="flex flex-col items-center gap-3">
               <label
-                class="!w-full sm:w-60 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 cursor-pointer"
+                :class="[
+                  '!w-full max-w-[300px] mb-3 sm:w-60 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded border text-sm font-semibold transition',
+                  progress > 0
+                    ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer',
+                ]"
               >
-                <input type="file" accept="video/*" class="hidden" />
-                Upload a Video
+                <Field
+                  v-model="video"
+                  type="file"
+                  accept=".mp4, .mov, .avi, .mkv, .webm"
+                  class="hidden"
+                  name="videoFile"
+                  id="videoFile"
+                  :disabled="progress > 0"
+                  @change="validateVideoFile"
+                />
+                {{
+                  videoButtonText.length > 20
+                    ? videoButtonText.slice(0, 20) + '...'
+                    : videoButtonText
+                }}
                 <span class="leading-none">
                   <UploadIcon />
                 </span>
               </label>
 
+              <div class="flex gap-3 !w-full max-w-[300px] sm:w-60">
+                <button
+                  v-if="showVideo || videoFileMessage"
+                  type="button"
+                  @click="removeVideo"
+                  :disabled="progress > 0"
+                  class="flex-1 py-2.5 rounded border border-[#FB977D] text-sm font-semibold text-white bg-[#FB977D] hover:bg-white hover:text-[#FB977D] transition disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-[#FB977D] disabled:hover:text-white"
+                >
+                  Remove
+                </button>
+                <button
+                  v-if="showVideo"
+                  type="button"
+                  :disabled="progress > 0"
+                  @click="uploadVideo"
+                  class="flex-1 py-2.5 rounded border border-orange-600 text-sm font-semibold text-white bg-orange-500 hover:bg-orange-400 transition disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-orange-500"
+                >
+                  Server Upload
+                </button>
+              </div>
+
+              <div
+                v-if="progress > 0 && progress < 100"
+                class="!w-full max-w-[300px] sm:w-60 bg-gray-200 rounded-full h-2 mt-4"
+              >
+                <div
+                  class="h-2 rounded-full"
+                  style="
+                    background: repeating-linear-gradient(
+                      45deg,
+                      #5aa0ff,
+                      #5aa0ff 10px,
+                      #7bb8ff 10px,
+                      #7bb8ff 20px
+                    );
+                  "
+                  :style="{ width: `${progress}%` }"
+                ></div>
+              </div>
+
+              <p v-if="progress > 0 && progress < 100" class="text-sm text-gray-500">
+                {{ progress }}%
+              </p>
+
+              <p v-if="videoFileMessage" class="text-sm text-red-500 mt-2">
+                {{ videoFileMessage }}
+              </p>
+
               <button
+                v-if="existingThumbnailUrl && !showVideo && !videoFileMessage && progress === 0"
                 type="button"
                 class="!w-full sm:w-60 inline-flex items-center justify-center px-6 py-2.5 rounded border border-[#FB977D] text-sm font-semibold text-white bg-[#FB977D] hover:bg-white hover:text-[#FB977D] transition disabled:opacity-60"
-                :disabled="!introVideoPreview"
+                @click="handleDeleteVideo"
               >
                 Delete Video
               </button>
             </div>
-            <!-- <ErrorMessage name="intro_video" class="text-red-500 text-xs mt-1" /> -->
+            <ErrorMessage name="intro_video" class="text-red-500 text-xs mt-1" />
           </div>
         </div>
 

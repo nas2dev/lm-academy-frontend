@@ -19,6 +19,7 @@
     "@popperjs/core": "^2.11.8",
     "axios": "^1.12.2",
     "pinia": "^3.0.3",
+    "resumablejs": "^1.1.0",
     "sweetalert2": "^11.26.3",
     "v-calendar": "^3.1.2",
     "vee-validate": "^4.15.1",
