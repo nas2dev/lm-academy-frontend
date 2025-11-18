@@ -10,6 +10,7 @@ import UploadIcon from '@/assets/fonts/feather-icons/icons/attachment-line-icon.
 import StatusToggle from '@/components/common/StatusToggle.vue'
 import Resumable from 'resumablejs'
 import { getBackendBaseUrl } from '@/utils/backendHelper'
+import Swal from 'sweetalert2'
 
 const props = defineProps({
   courseId: {
@@ -25,6 +26,7 @@ const existingThumbnailUrl = ref(null)
 const initialValues = ref(null)
 const formKey = ref(0)
 const introVideoPreview = ref(null)
+const existingIntroVideoUrl = ref(null)
 
 const schema = yup.object({
   title: yup.string().required('Title is required').max(255),
@@ -53,6 +55,8 @@ const fetchCourse = async () => {
 
     existingThumbnailUrl.value = thumbnailUrl
     thumbnailPreview.value = thumbnailUrl
+    existingIntroVideoUrl.value = getStorageUrl(data.course.intro_video, null)
+    introVideoPreview.value = existingIntroVideoUrl.value
     formKey.value += 1
   } catch (err) {
     toast.error(err.response?.data?.message || err?.message || 'Failed to load course')
@@ -169,7 +173,7 @@ const uploadVideo = () => {
 
 // Resumable.js instance
 const resumable = new Resumable({
-  target: `${getBackendBaseUrl()}/api/courses/${props.courseId}/upload-video`, // your backend chunk upload endpoint
+  target: `${getBackendBaseUrl()}/api/chunks/upload/course-video`, // your backend chunk upload endpoint
   chunkSize: 4 * 1024 * 1024, // 4MB
   simultaneousUploads: 2, // max concurrent uploads
   testChunks: false, // disable automatic chunk testing
@@ -262,6 +266,50 @@ const removeVideo = () => {
   const fileInput = document.getElementById('videoFile')
   if (fileInput) {
     fileInput.value = null
+  }
+}
+
+const handleDeleteVideo = async () => {
+  const result = await Swal.fire({
+    title: 'Delete Intro Video',
+    text: 'Are you sure you want to delete this intro video? The file will be deleted from the server. This action cannot be undone.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'No, cancel!',
+    reverseButtons: true,
+    focusCancel: true,
+    customClass: {
+      confirmButton: 'bg-swalConfirm text-white hover:bg-swalConfirm/80',
+      cancelButton: 'bg-swalCancel text-white hover:bg-swalCancel/80',
+    },
+  })
+
+  if (!result.isConfirmed) return
+
+  try {
+    const { data } = await Axios.delete(`/courses/${props.courseId}/video`)
+
+    if (!data.success) {
+      throw new Error(data?.message || 'Failed to delete video')
+    }
+
+    // Update local state
+    existingIntroVideoUrl.value = null
+    introVideoPreview.value = null
+
+    // Update form values if needed
+    if (initialValues.value) {
+      initialValues.value.intro_video = null
+    }
+
+    toast.success(data?.message || 'Video deleted successfully')
+
+    // Optionally refresh the course details data
+    await fetchCourse()
+  } catch (err) {
+    console.log('err', err?.message)
+    toast.error(err.response?.data?.message || err?.message || 'Failed to delete video')
   }
 }
 </script>
@@ -380,10 +428,10 @@ const removeVideo = () => {
               </div>
             </div>
 
-            <div class="flex flex-col items-center gap-3">
+            <div class="flex flex-col items-center space-y-2.5">
               <label
                 :class="[
-                  '!w-full max-w-[300px] mb-3 sm:w-60 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded border text-sm font-semibold transition',
+                  '!w-full max-w-[300px]  sm:w-60 inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded border text-sm font-semibold transition',
                   progress > 0
                     ? 'border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed'
                     : 'border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer',
@@ -456,9 +504,8 @@ const removeVideo = () => {
               <p v-if="videoFileMessage" class="text-sm text-red-500 mt-2">
                 {{ videoFileMessage }}
               </p>
-
               <button
-                v-if="existingThumbnailUrl && !showVideo && !videoFileMessage && progress === 0"
+                v-if="introVideoPreview && !showVideo && !videoFileMessage && progress === 0"
                 type="button"
                 class="!w-full sm:w-60 inline-flex items-center justify-center px-6 py-2.5 rounded border border-[#FB977D] text-sm font-semibold text-white bg-[#FB977D] hover:bg-white hover:text-[#FB977D] transition disabled:opacity-60"
                 @click="handleDeleteVideo"
