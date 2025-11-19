@@ -140,6 +140,16 @@ const router = createRouter({
           }
         },
         {
+          path: 'manage/courses/:courseId/modules',
+          name: 'AdminCourseModuleViewPage',
+          component: () => import('../views/Dashboard/Admin/CourseModule/CourseModuleView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Manage Modules"
+          }
+        },
+        {
           path: 'manage/users',
           name: 'AdminUsersViewPage',
           component: () => import('../views/Dashboard/Admin/Users/UsersView.vue'),
