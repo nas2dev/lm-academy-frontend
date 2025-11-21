@@ -160,6 +160,16 @@ const router = createRouter({
           }
         },
         {
+          path: 'manage/sections/:sectionId/materials',
+          name: 'AdminCourseSectionMaterialsViewPage',
+          component: () => import('../views/Dashboard/Admin/CourseMaterial/CourseSectionMaterialsView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Manage Materials"
+          }
+        },
+        {
           path: 'manage/users',
           name: 'AdminUsersViewPage',
           component: () => import('../views/Dashboard/Admin/Users/UsersView.vue'),

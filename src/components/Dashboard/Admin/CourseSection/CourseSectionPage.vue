@@ -170,8 +170,8 @@ const handleModalSuccess = () => {
   fetchSections()
 }
 
-const getMaterialRoute = (moduleId) => {
-  return { name: 'AdminCourseSectionViewPage', params: { moduleId } }
+const getMaterialRoute = (sectionId) => {
+  return { name: 'AdminCourseSectionMaterialsViewPage', params: { sectionId } }
 }
 
 onMounted(() => {
