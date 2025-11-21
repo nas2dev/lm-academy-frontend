@@ -150,6 +150,16 @@ const router = createRouter({
           }
         },
         {
+          path: 'manage/modules/:moduleId/sections',
+          name: 'AdminCourseSectionViewPage',
+          component: () => import('../views/Dashboard/Admin/CourseSection/CourseSectionView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Manage Sections"
+          }
+        },
+        {
           path: 'manage/users',
           name: 'AdminUsersViewPage',
           component: () => import('../views/Dashboard/Admin/Users/UsersView.vue'),

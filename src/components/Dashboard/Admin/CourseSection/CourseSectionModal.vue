@@ -9,15 +9,15 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  courseId: {
+  moduleId: {
     type: [String, Number],
     required: true,
   },
-  courseTitle: {
+  moduleTitle: {
     type: String,
     required: true,
   },
-  moduleId: {
+  sectionId: {
     type: [String, Number],
     default: null,
   },
@@ -28,7 +28,7 @@ const emit = defineEmits(['close', 'success'])
 const toast = useToast()
 const loading = ref(false)
 const formKey = ref(0)
-const fetchingModule = ref(false)
+const fetchingSection = ref(false)
 const initialValues = ref({
   title: '',
   description: '',
@@ -39,34 +39,34 @@ const schema = yup.object({
   description: yup.string().required('Description is required'),
 })
 
-const isEditMode = computed(() => !!props.moduleId)
+const isEditMode = computed(() => !!props.sectionId)
 const buttonText = computed(() => (isEditMode.value ? 'Update' : 'Create'))
 
-const fetchModule = async () => {
-  if (!props.moduleId) {
+const fetchSection = async () => {
+  if (!props.sectionId) {
     initialValues.value = { title: '', description: '' }
-    fetchingModule.value = false
+    fetchingSection.value = false
     formKey.value++
     return
   }
 
   try {
-    fetchingModule.value = true
-    const { data } = await Axios.get(`modules/${props.moduleId}`)
+    fetchingSection.value = true
+    const { data } = await Axios.get(`sections/${props.sectionId}`)
 
-    if (!data.success) throw new Error(data?.message || 'Failed to fetch module')
+    if (!data.success) throw new Error(data?.message || 'Failed to fetch section')
 
     initialValues.value = {
-      title: data.module.title || '',
-      description: data.module.description || '',
+      title: data.section.title || '',
+      description: data.section.description || '',
     }
 
     formKey.value++
   } catch (err) {
-    toast.error(err.response?.data?.message || err?.message || 'Failed to fetch module')
+    toast.error(err.response?.data?.message || err?.message || 'Failed to fetch section')
     emit('close')
   } finally {
-    fetchingModule.value = false
+    fetchingSection.value = false
   }
 }
 
@@ -74,7 +74,7 @@ watch(
   () => props.isOpen,
   (newVal) => {
     if (newVal) {
-      fetchModule()
+      fetchSection()
     }
   },
 )
@@ -83,7 +83,7 @@ watch(
   () => props.moduleId,
   () => {
     if (props.isOpen) {
-      fetchModule()
+      fetchSection()
     }
   },
 )
@@ -106,26 +106,27 @@ const handleKeydown = (event) => {
 }
 
 const onSubmit = async (values, { resetForm }) => {
+  if (loading.value) return
   try {
     loading.value = true
 
     if (isEditMode.value) {
-      const { data } = await Axios.put(`/modules/${props.moduleId}`, {
+      const { data } = await Axios.put(`/sections/${props.sectionId}`, {
         title: values.title,
         description: values.description,
       })
 
-      if (!data.success) throw new Error(data?.message || 'Failed to update module')
-      toast.success(data.message || 'Module updated successfully')
+      if (!data.success) throw new Error(data?.message || 'Failed to update section')
+      toast.success(data.message || 'Section updated successfully')
     } else {
-      const { data } = await Axios.post(`/modules`, {
-        course_id: props.courseId,
+      const { data } = await Axios.post(`/sections`, {
+        module_id: props.moduleId,
         title: values.title,
         description: values.description,
       })
 
-      if (!data.success) throw new Error(data?.message || 'Failed to create module')
-      toast.success(data.message || 'Module created successfully')
+      if (!data.success) throw new Error(data?.message || 'Failed to create section')
+      toast.success(data.message || 'Section created successfully')
     }
 
     resetForm({ values: { ...initialValues.value } })
@@ -135,7 +136,7 @@ const onSubmit = async (values, { resetForm }) => {
     toast.error(
       err.response?.data?.message ||
         err?.message ||
-        `Failed to ${isEditMode.value ? 'update' : 'create'} module`,
+        `Failed to ${isEditMode.value ? 'update' : 'create'} section`,
     )
   } finally {
     loading.value = false
@@ -159,10 +160,10 @@ onMounted(() => {
     >
       <!-- Header -->
       <div class="flex items-center justify-center relative p-6">
-        <h3 class="text-3xl font-bold text-center pr-10 text-gray-900">{{ courseTitle }}</h3>
+        <h3 class="text-3xl font-bold text-center pr-10 text-gray-900">{{ moduleTitle }}</h3>
         <button
           @click="handleClose"
-          :disabled="loading || fetchingModule"
+          :disabled="loading || fetchingSection"
           class="absolute right-6 text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,10 +181,10 @@ onMounted(() => {
 
       <div class="p-6">
         <!-- Loading state -->
-        <div v-if="fetchingModule" class="flex items-center justify-center py-12">
+        <div v-if="fetchingSection" class="flex items-center justify-center py-12">
           <div class="flex flex-col items-center gap-4">
             <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1F8EFA]"></div>
-            <p class="text-gray-500 text-sm">Loading module data...</p>
+            <p class="text-gray-500 text-sm">Loading section data...</p>
           </div>
         </div>
 

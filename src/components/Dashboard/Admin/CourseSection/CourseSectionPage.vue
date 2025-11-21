@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import Axios from '@/utils/axios'
 import Swal from 'sweetalert2'
-import CourseModuleModal from '@/components/Dashboard/Admin/CourseModule/CourseModuleModal.vue'
+import CourseSectionModal from '@/components/Dashboard/Admin/CourseSection/CourseSectionModal.vue'
 import DataTable from '@/components/Dashboard/General/DataTable.vue'
 import PlusIcon from '@/assets/fonts/feather-icons/icons/add-icon.svg?component'
 import EditIcon from '@/assets/fonts/feather-icons/icons/edit-icon.svg?component'
@@ -12,16 +12,17 @@ import TrashIcon from '@/assets/fonts/feather-icons/icons/delete-icon.svg?compon
 
 const route = useRoute()
 const toast = useToast()
-const courseId = computed(() => route.params.courseId)
+const moduleId = computed(() => route.params.moduleId)
+const courseId = ref(1)
 
-const modules = ref([])
+const sections = ref([])
 const loading = ref(false)
 const error = ref(null)
 const pagination = ref(null)
-const courseTitle = ref('')
+const moduleTitle = ref('')
 
 const showModal = ref(false)
-const selectedModuleId = ref(null)
+const selectedSectionId = ref(null)
 
 // create var ref table
 
@@ -33,33 +34,33 @@ const columns = [
   { key: 'nr', label: 'Nr' },
   { key: 'title', label: 'Title' },
   { key: 'description', label: 'Description' },
-  { key: 'section_nr', label: 'Section Nr' },
-  { key: 'sections', label: 'Sections' },
+  { key: 'materials', label: 'Materials' },
+  { key: 'material', label: 'Material' },
   { key: 'actions', label: 'Actions' },
 ]
 
 const handleSearch = (term) => {
   searchTerm.value = term
   currentPage.value = 1
-  fetchModules()
+  fetchSections()
 }
 
 const handlePageChange = (page) => {
   currentPage.value = page
-  fetchModules()
+  fetchSections()
 }
 
 const handlePerPageChange = (newPerPage) => {
   perPage.value = newPerPage
   currentPage.value = 1
-  fetchModules()
+  fetchSections()
 }
 
 const handleRefresh = () => {
-  fetchModules()
+  fetchSections()
 }
 
-const fetchModules = async () => {
+const fetchSections = async () => {
   loading.value = true
   error.value = null
 
@@ -67,63 +68,67 @@ const fetchModules = async () => {
     const params = new URLSearchParams({
       page: currentPage.value,
       per_page: perPage.value,
-      course_id: courseId.value,
+      module_id: moduleId.value,
     })
 
     if (searchTerm.value) params.append('searchTerm', searchTerm.value)
 
-    const { data } = await Axios.get(`/modules?${params.toString()}`)
+    const { data } = await Axios.get(`/sections?${params.toString()}`)
 
-    if (!data.success) throw new Error(data?.message || 'Failed to fetch modules')
+    if (!data.success) throw new Error(data?.message || 'Failed to fetch sections')
 
-    modules.value = data.modules.data.map((module, index) => ({
-      ...module,
+    sections.value = data.sections.data.map((section, index) => ({
+      ...section,
       nr: (currentPage.value - 1) * perPage.value + index + 1,
     }))
 
+    console.log('sections', data)
+
+    courseId.value = data?.course_id ? data?.course_id : null
+
     pagination.value = {
-      current_page: data.modules.current_page,
-      per_page: data.modules.per_page,
-      total: data.modules.total,
-      last_page: data.modules.last_page,
-      from: data.modules.from,
-      to: data.modules.to,
-      prev_page_url: data.modules.prev_page_url,
-      next_page_url: data.modules.next_page_url,
+      current_page: data.sections.current_page,
+      per_page: data.sections.per_page,
+      total: data.sections.total,
+      last_page: data.sections.last_page,
+      from: data.sections.from,
+      to: data.sections.to,
+      prev_page_url: data.sections.prev_page_url,
+      next_page_url: data.sections.next_page_url,
     }
   } catch (err) {
     console.error(err)
-    error.value = err.response?.data?.message || err.message || 'Failed to fetch modules'
+    error.value = err.response?.data?.message || err.message || 'Failed to fetch sections'
     toast.error(error.value)
   } finally {
     loading.value = false
   }
 }
 
-const fetchCourseTitle = async () => {
+const fetchModuleTitle = async () => {
   try {
-    const { data } = await Axios.get(`/courses/${courseId.value}`)
-    if (!data.success) throw new Error(data?.message || 'Failed to fetch course title')
-    courseTitle.value = data.course.title
+    const { data } = await Axios.get(`/modules/${moduleId.value}`)
+    if (!data.success) throw new Error(data?.message || 'Failed to fetch module title')
+    moduleTitle.value = data.module.title
   } catch (err) {
     console.error(err)
-    toast.error(err.response?.data?.message || err.message || 'Failed to fetch course title')
+    toast.error(err.response?.data?.message || err.message || 'Failed to fetch module title')
   }
 }
 
 const handleCreateModule = () => {
-  selectedModuleId.value = null
+  selectedSectionId.value = null
   showModal.value = true
 }
 
-const handleEdit = (module) => {
-  selectedModuleId.value = module.id
+const handleEdit = (section) => {
+  selectedSectionId.value = section.id
   showModal.value = true
 }
-const handleDelete = async (module) => {
+const handleDelete = async (section) => {
   const result = await Swal.fire({
-    title: 'Delete Module',
-    text: `Are you sure you want to delete "${module.title}"? This action cannot be undone.`,
+    title: 'Delete Section',
+    text: `Are you sure you want to delete "${section.title}"? This action cannot be undone.`,
     icon: 'warning',
     showCancelButton: true,
     confirmButtonText: 'Yes, delete it!',
@@ -139,56 +144,57 @@ const handleDelete = async (module) => {
   if (!result.isConfirmed) return
 
   try {
-    const { data } = await Axios.delete(`/modules/${module.id}`)
-    if (!data.success) throw new Error(data?.message || 'Failed to delete module')
+    const { data } = await Axios.delete(`/sections/${section.id}`)
+    if (!data.success) throw new Error(data?.message || 'Failed to delete section')
 
-    const index = modules.value.findIndex((m) => m.id === module.id)
+    const index = sections.value.findIndex((s) => s.id === section.id)
     if (index !== -1) {
-      modules.value.splice(index, 1)
+      sections.value.splice(index, 1)
     }
 
-    toast.success(data.message || 'Module deleted successfully')
+    toast.success(data.message || 'Section deleted successfully')
 
-    fetchModules()
+    fetchSections()
   } catch (err) {
-    console.error('Error deleting module', err)
-    toast.error(err.response?.data?.message || err.message || 'Failed to delete module')
+    console.error('Error deleting section', err)
+    toast.error(err.response?.data?.message || err.message || 'Failed to delete section')
   }
 }
 
 const handleModalClose = () => {
   showModal.value = false
-  selectedModuleId.value = null
+  selectedSectionId.value = null
 }
 
 const handleModalSuccess = () => {
-  fetchModules()
+  fetchSections()
 }
 
-const getSectionRoute = (moduleId) => {
+const getMaterialRoute = (moduleId) => {
   return { name: 'AdminCourseSectionViewPage', params: { moduleId } }
 }
 
 onMounted(() => {
-  fetchCourseTitle()
-  fetchModules()
+  fetchModuleTitle()
+  fetchSections()
 })
 </script>
 <template>
   <div class="space-y-6">
     <div class="flex justify-between items-center">
       <div>
-        <h2 class="text-2xl font-semibold text-gray-800">Course Modules</h2>
+        <h2 class="text-2xl font-semibold text-gray-800">Course Sections</h2>
       </div>
       <div>
         <router-link
-          :to="{ name: 'EditCoursePage', params: { courseId: courseId } }"
+          :to="{ name: 'AdminCourseViewPage' }"
           class="text-sm font-semibold text-[#1F8EFA] hover:text-[#1979d6] hover:underline"
         >
-          Course
+          Courses
         </router-link>
         <span class="text-gray-500 mx-2">|</span>
         <router-link
+          v-if="courseId"
           :to="{ name: 'AdminCourseModuleViewPage', params: { courseId: courseId } }"
           class="text-sm font-semibold text-[#1F8EFA] hover:text-[#1979d6] hover:underline"
         >
@@ -196,11 +202,10 @@ onMounted(() => {
         </router-link>
       </div>
     </div>
-
     <DataTable
-      :title="`The list of modules for the &quot;${courseTitle}&quot; Course`"
+      :title="`The list of sections for the &quot;${moduleTitle}&quot; Module`"
       :columns="columns"
-      :data="modules"
+      :data="sections"
       :loading="loading"
       :error="error"
       :pagination="pagination"
@@ -215,7 +220,7 @@ onMounted(() => {
           class="flex items-center gap-2 px-5 py-2 rounded-full bg-[#0085DB] text-white text-sm font-semibold shadow hover:bg-[#1979d6] transition"
           @click="handleCreateModule"
         >
-          Create Module <PlusIcon />
+          Create Section <PlusIcon />
         </button>
       </template>
 
@@ -225,9 +230,9 @@ onMounted(() => {
         </div>
       </template>
 
-      <template #cell-sections="{ row }">
+      <template #cell-material="{ row }">
         <router-link
-          :to="getSectionRoute(row.id)"
+          :to="getMaterialRoute(row.id)"
           target="_blank"
           class="text-blue-600 hover:text-blue-800 text-sm font-medium transition-all duration-200 group flex items-center gap-1"
         >
@@ -261,11 +266,11 @@ onMounted(() => {
       </template>
     </DataTable>
 
-    <CourseModuleModal
+    <CourseSectionModal
       :is-open="showModal"
-      :course-id="courseId"
-      :course-title="courseTitle"
-      :module-id="selectedModuleId"
+      :module-id="moduleId"
+      :module-title="moduleTitle"
+      :section-id="selectedSectionId"
       @close="handleModalClose"
       @success="handleModalSuccess"
     />
