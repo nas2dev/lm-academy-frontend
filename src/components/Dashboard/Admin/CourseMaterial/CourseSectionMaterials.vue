@@ -5,6 +5,7 @@ import { useToast } from 'vue-toastification'
 import Axios from '@/utils/axios'
 import addBtnIcon from '@/assets/images/add.png'
 import BreadCrumbs from '@/components/Dashboard/General/BreadCrumbs.vue'
+import MaterialCard from '@/components/Dashboard/Admin/CourseMaterial/MaterialCard.vue'
 
 const route = useRoute()
 const toast = useToast()
@@ -73,6 +74,46 @@ const scrollToTop = () => {
     behavior: 'smooth',
   })
 }
+
+// Drag and Drop functions
+const draggedIndex = ref(null)
+const draggedOverIndex = ref(null)
+
+const handleUpdateMaterial = () => {
+  console.log('Material updated')
+}
+
+const handleDeleteMaterial = () => {
+  console.log('Material updated')
+}
+
+const moveUp = () => {
+  console.log('Material moved up')
+}
+
+const moveDown = () => {
+  console.log('Material moved down')
+}
+
+const handleDragStart = () => {
+  console.log('Material dragged start')
+}
+
+const handleDragOver = () => {
+  console.log('Material dragged over')
+}
+
+const handleDragLeave = () => {
+  console.log('Material dragged leave')
+}
+
+const handleDrop = () => {
+  console.log('Material dropped')
+}
+
+const handleDragEnd = () => {
+  console.log('Material dragged end')
+}
 </script>
 
 <template>
@@ -133,13 +174,46 @@ const scrollToTop = () => {
         No materials found for this section.
       </div>
 
-      <div
+      <!-- <div
         v-for="material in materials"
         :key="material.id"
         class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5 mb-6"
       >
         {{ material }}
-      </div>
+      </div> -->
+      <TransitionGroup name="material-list" tag="div">
+        <MaterialCard
+          v-for="(material, index) in materials"
+          :key="material.id"
+          :material="material"
+          :index="index"
+          :totalMaterials="materials.length"
+          :draggedIndex="draggedIndex"
+          :draggedOverIndex="draggedOverIndex"
+          @update="handleUpdateMaterial"
+          @delete="handleDeleteMaterial"
+          @moveUp="moveUp"
+          @moveDown="moveDown"
+          @dragStart="handleDragStart"
+          @dragOver="handleDragOver"
+          @dragLeave="handleDragLeave"
+          @drop="handleDrop"
+          @dragEnd="handleDragEnd"
+        />
+      </TransitionGroup>
+    </div>
+
+    <div class="flex justify-end">
+      <button
+        type="button"
+        class="flex items-center gap-2 px-5 py-2 rounded-full bg-[#1F8EFA] text-white text-sm font-semibold shadow hover:bg-[#1979d6] transition"
+        @click="handleCreateMaterial"
+      >
+        <span class="flex items-center justify-center w-6 h-6 rounded-full bg-white/30">
+          <img :src="addBtnIcon" alt="Add Icon" class="w-4 h-4" />
+        </span>
+        <span>New Material</span>
+      </button>
     </div>
 
     <button
@@ -153,3 +227,26 @@ const scrollToTop = () => {
     </button>
   </div>
 </template>
+
+<style scoped>
+.material-list-move,
+.material-list-enter-active,
+.material-list-leave-active {
+  transition: all 0.3s ease;
+}
+
+.material-list-enter-from {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.material-list-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.material-list-leave-active {
+  position: absolute;
+  width: 100%;
+}
+</style>
