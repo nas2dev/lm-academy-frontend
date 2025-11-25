@@ -6,6 +6,7 @@ import Axios from '@/utils/axios'
 import addBtnIcon from '@/assets/images/add.png'
 import BreadCrumbs from '@/components/Dashboard/General/BreadCrumbs.vue'
 import MaterialCard from '@/components/Dashboard/Admin/CourseMaterial/MaterialCard.vue'
+import CourseCreateMaterialModal from '@/components/Dashboard/Admin/CourseMaterial/CourseCreateMaterialModal.vue'
 
 const route = useRoute()
 const toast = useToast()
@@ -61,7 +62,8 @@ onUnmounted(() => {
 })
 
 const handleCreateMaterial = () => {
-  toast.info('Material creation flow is coming soon!')
+  selectedMaterialId.value = null
+  showCreateModal.value = true
 }
 
 const handleScroll = () => {
@@ -79,8 +81,9 @@ const scrollToTop = () => {
 const draggedIndex = ref(null)
 const draggedOverIndex = ref(null)
 
-const handleUpdateMaterial = () => {
-  console.log('Material updated')
+const handleUpdateMaterial = (material) => {
+  showCreateModal.value = true
+  selectedMaterialId.value = material.id
 }
 
 const handleDeleteMaterial = () => {
@@ -113,6 +116,19 @@ const handleDrop = () => {
 
 const handleDragEnd = () => {
   console.log('Material dragged end')
+}
+
+// Create Material Modal
+const showCreateModal = ref(false)
+const selectedMaterialId = ref(null)
+
+const handleCloseModal = () => {
+  showCreateModal.value = false
+  selectedMaterialId.value = null
+}
+
+const handleMaterialCreated = () => {
+  console.log('Material created')
 }
 </script>
 
@@ -173,14 +189,6 @@ const handleDragEnd = () => {
       >
         No materials found for this section.
       </div>
-
-      <!-- <div
-        v-for="material in materials"
-        :key="material.id"
-        class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 space-y-5 mb-6"
-      >
-        {{ material }}
-      </div> -->
       <TransitionGroup name="material-list" tag="div">
         <MaterialCard
           v-for="(material, index) in materials"
@@ -225,6 +233,14 @@ const handleDragEnd = () => {
     >
       ↑
     </button>
+
+    <CourseCreateMaterialModal
+      :isOpen="showCreateModal"
+      :sectionId="Number(sectionId)"
+      :materialId="selectedMaterialId"
+      @close="handleCloseModal"
+      @success="handleMaterialCreated"
+    />
   </div>
 </template>
 
