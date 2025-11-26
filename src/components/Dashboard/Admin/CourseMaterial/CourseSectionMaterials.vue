@@ -127,8 +127,29 @@ const handleCloseModal = () => {
   selectedMaterialId.value = null
 }
 
-const handleMaterialCreated = () => {
-  console.log('Material created')
+const handleMaterialCreated = (updateMaterial) => {
+  if (selectedMaterialId.value) {
+    // Update mode - update the material in the list
+    // TODO: Implement this
+  } else if (updateMaterial && updateMaterial.id) {
+    // Create mode - Add the new material to the list without refresh
+    const materialWithMetadata = {
+      ...updateMaterial,
+      nr: materials.value.length + 1,
+      extension: updateMaterial.material_url
+        ? updateMaterial.material_url.split('.').pop().toLowerCase()
+        : null,
+      created_by: updateMaterial.created_by || null,
+      updated_by: updateMaterial.updated_by || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+    materials.value.push(materialWithMetadata)
+  } else {
+    // Video upload or fallback: refresh to get the new material with all metadata
+    // Only refresh if we truly don't have material data (e.g., video uploads)
+    fetchMaterials()
+  }
 }
 </script>
 

@@ -7,6 +7,8 @@ import { useToast } from 'vue-toastification'
 import Resumable from 'resumablejs'
 import { getBackendBaseUrl, getStorageUrl } from '@/utils/backendHelper'
 import ImageUploadSection from './ImageUploadSection.vue'
+import FileUploadSection from './FileUploadSection.vue'
+import VideoUploadSection from './VideoUploadSection.vue'
 
 const props = defineProps({
   isOpen: {
@@ -166,7 +168,84 @@ const handleClose = () => {
 }
 
 const onSubmit = async (values, { resetForm: resetFormHandler }) => {
-  console.log('onSubmit', values)
+  if (loading.value || progress.value > 0) return
+
+  // Handle video upload separately (for both create and update)
+  // But only if a new file is selected
+  if (selectedType.value === 'video' && video.value) {
+    if (!validateBeforeSubmit()) {
+      return
+    }
+    uploadVideo()
+    return
+  }
+
+  // For video in edit mode without new file, update just the title via regular API
+  // TODO: Implement this method above
+
+  if (!validateBeforeSubmit()) {
+    return
+  }
+
+  try {
+    loading.value = true
+
+    const formData = new FormData()
+
+    if (isEditMode.value) {
+      // Update mode
+    } else {
+      // Create mode
+      formData.append('section_id', props.sectionId)
+      formData.append('title', values.title)
+      formData.append('type', selectedType.value)
+
+      if (selectedType.value === 'text') {
+        formData.append('content', content.value || '')
+      } else if (selectedType.value === 'image' && materialImage.value) {
+        formData.append('material', materialImage.value)
+      } else if (selectedType.value === 'file' && materialFile.value) {
+        formData.append('material', materialFile.value)
+      }
+
+      const { data } = await Axios.post('/materials', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (!data.success) {
+        throw new Error(data?.message || 'Failed to create material')
+      }
+
+      toast.success('Material created successfully')
+      resetForm()
+      resetFormHandler()
+
+      // The API returns course_material, not material
+      const materialData = data.course_material || null
+
+      if (materialData && materialData.id) {
+        emit('success', materialData)
+      } else {
+        // If material is not in response, emit null to trigger refresh
+        emit('success', null)
+      }
+      emit('close')
+    }
+  } catch (err) {
+    const errorMessage =
+      err.response?.data?.message || err.response?.data?.errors
+        ? Object.values(err.response.data.errors).flat().join(', ')
+        : err.message || `Failed to ${isEditMode.value ? 'update' : 'create'} material`
+    toast.error(errorMessage)
+  } finally {
+    loading.value = false
+  }
+}
+
+const uploadVideo = () => {
+  console.log('uploading video')
 }
 </script>
 
@@ -270,6 +349,46 @@ const onSubmit = async (values, { resetForm: resetFormHandler }) => {
               v-model:error="imageError"
               :loading="loading"
             />
+
+            <!-- File Upload Section -->
+            <FileUploadSection
+              v-if="selectedType === 'file'"
+              v-model="materialFile"
+              :existing-url="existingFileUrl"
+              v-model:error="fileError"
+              :loading="loading"
+            />
+
+            <!-- Video Upload Section -->
+            <VideoUploadSection
+              v-if="selectedType === 'video'"
+              v-model="video"
+              :existing-url="existingVideoUrl"
+              v-model:error="videoError"
+              :loading="loading"
+              :progress="progress"
+            />
+
+            <!-- Footer Buttons -->
+            <div class="flex justify-end items-center pt-4 gap-4">
+              <button
+                type="submit"
+                :disabled="
+                  loading || (!isEditMode && !selectedType) || progress > 0 || fetchingMaterial
+                "
+                class="px-8 py-2 rounded bg-green-500 bg-opacity-70 text-white font-medium hover:bg-opacity-80 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {{
+                  loading
+                    ? isEditMode
+                      ? 'Updating...'
+                      : 'Adding...'
+                    : progress > 0
+                      ? 'Uploading...'
+                      : buttonText
+                }}
+              </button>
+            </div>
           </form>
         </Form>
       </div>
