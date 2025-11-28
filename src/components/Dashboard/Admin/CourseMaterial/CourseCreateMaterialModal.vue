@@ -103,7 +103,7 @@ watch(
   () => [props.isOpen, props.materialId],
   ([isOpen, materialId]) => {
     if (isOpen && materialId) {
-      // fetchMaterial()
+      fetchMaterial()
     } else {
       resetForm()
     }
@@ -111,7 +111,46 @@ watch(
 )
 
 const fetchMaterial = async () => {
-  console.log('fetchingMaterial')
+  if (!props.materialId) {
+    resetForm()
+    fetchMaterial.value = false
+    formKey.value++
+    return
+  }
+
+  try {
+    fetchingMaterial.value = true
+    const { data } = await Axios.get(`/materials/${props.materialId}`)
+
+    if (!data.success) {
+      throw new Error(data?.message || 'Failed to fetch material')
+    }
+
+    const material = data.material
+
+    selectedType.value = material.type
+    title.value = material.title
+    content.value = material.content || null
+
+    // Set existing URLs for preview
+    if (material.material_url) {
+      const fileUrl = getStorageUrl(material.material_url, null)
+      if (material.type === 'image') {
+        existingImageUrl.value = fileUrl
+      } else if (material.type === 'file') {
+        existingFileUrl.value = fileUrl
+      } else if (material.type === 'video') {
+        existingVideoUrl.value = fileUrl
+      }
+    }
+
+    formKey.value++
+  } catch (err) {
+    toast.error(err.response?.data?.message || err?.message || 'Failed to fetch material')
+    emit('close')
+  } finally {
+    fetchingMaterial.value = false
+  }
 }
 
 const validateBeforeSubmit = () => {
@@ -145,17 +184,6 @@ watch(selectedType, () => {
   videoError.value = ''
 })
 
-watch(
-  () => props.isOpen,
-  (newVal) => {
-    if (newVal && props.materialId) {
-      fetchMaterial()
-    } else if (newVal && !props.materialId) {
-      resetForm()
-    }
-  },
-)
-
 const handleBackdropClick = () => {
   if (!loading.value) {
     resetForm()
@@ -181,7 +209,43 @@ const onSubmit = async (values, { resetForm: resetFormHandler }) => {
   }
 
   // For video in edit mode without new file, update just the title via regular API
-  // TODO: Implement this method above
+  if (selectedType.value === 'video' && isEditMode.value && !video.value) {
+    if (!validateBeforeSubmit()) {
+      return
+    }
+
+    try {
+      loading.value = true
+
+      const formData = new FormData()
+      formData.append('title', title.value)
+
+      const { data } = await Axios.post(`materials/${props.materialId}?_method=PUT`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (!data.success) {
+        throw new Error(data?.message || 'Failed to update material')
+      }
+
+      toast.success('Material updated successfully')
+      resetForm()
+      resetFormHandler()
+      emit('success', data.material)
+      emit('close')
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.message || err.response?.data?.errors
+          ? Object.value(err.response.data.errors).flat().join(', ')
+          : err.message || 'Failed to update material'
+      toast.error(errorMessage)
+    } finally {
+      loading.value = false
+    }
+    return
+  }
 
   if (!validateBeforeSubmit()) {
     return
@@ -194,6 +258,31 @@ const onSubmit = async (values, { resetForm: resetFormHandler }) => {
 
     if (isEditMode.value) {
       // Update mode
+      formData.append('title', title.value)
+
+      if (selectedType.value === 'text') {
+        formData.append('content', content.value || '')
+      } else if (selectedType.value === 'image' && materialImage.value) {
+        formData.append('material', materialImage.value)
+      } else if (selectedType.value === 'file' && materialFile.value) {
+        formData.append('material', materialFile.value)
+      }
+
+      const { data } = await Axios.post(`/materials/${props.materialId}?_method=PUT`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (!data.success) {
+        throw new Error(data?.message || 'Failed to update material')
+      }
+
+      toast.success('Material updated successfully')
+      resetForm()
+      resetFormHandler()
+      emit('success', data.material)
+      emit('close')
     } else {
       // Create mode
       formData.append('section_id', props.sectionId)
@@ -250,7 +339,7 @@ let resumable = null
 const createResumableInstance = () => {
   const isUpdate = isEditMode.value && props.materialId
   const targetUrl = isUpdate
-    ? `test`
+    ? `${getBackendBaseUrl()}/api/chunks/upload/update-course-video-material`
     : `${getBackendBaseUrl()}/api/chunks/upload/course-video-material`
 
   if (resumable) {
@@ -266,6 +355,7 @@ const createResumableInstance = () => {
     query: isUpdate
       ? {
           title: title.value,
+          material_id: props.materialId,
         }
       : {
           title: title.value,
@@ -313,7 +403,6 @@ const createResumableInstance = () => {
 
         if (material) {
           resetForm()
-          emit('close')
           emit('success', {
             id: material.id,
             title: material.title,
@@ -322,6 +411,7 @@ const createResumableInstance = () => {
             material_url: material.material_url,
             sort_order: material.sort_order,
           })
+          emit('close')
           return
         }
       }

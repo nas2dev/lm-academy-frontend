@@ -175,7 +175,23 @@ const handleCloseModal = () => {
 const handleMaterialCreated = (updateMaterial) => {
   if (selectedMaterialId.value) {
     // Update mode - update the material in the list
-    // TODO: Implement this
+    const index = materials.value.findIndex((m) => m.id === selectedMaterialId.value)
+    if (index !== -1 && updateMaterial) {
+      // Update the material with the new data
+      materials.value[index] = {
+        ...materials.value[index],
+        ...updateMaterial,
+        extension: updateMaterial.material_url
+          ? updateMaterial.material_url.split('.').pop().toLowerCase()
+          : materials.value[index].extension,
+        updated_at: (() => {
+          const d = new Date()
+          const pad = (n) => (n < 10 ? '0' + n : n)
+          return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+        })(),
+      }
+    }
+    selectedMaterialId.value = null
   } else if (updateMaterial && updateMaterial.id) {
     // Create mode - Add the new material to the list without refresh
     const materialWithMetadata = {
