@@ -244,9 +244,136 @@ const onSubmit = async (values, { resetForm: resetFormHandler }) => {
   }
 }
 
-const uploadVideo = () => {
-  console.log('uploading video')
+// Resumable.js instance - will be created based on mode
+let resumable = null
+
+const createResumableInstance = () => {
+  const isUpdate = isEditMode.value && props.materialId
+  const targetUrl = isUpdate
+    ? `test`
+    : `${getBackendBaseUrl()}/api/chunks/upload/course-video-material`
+
+  if (resumable) {
+    resumable.cancel()
+  }
+
+  resumable = new Resumable({
+    target: targetUrl,
+    chunkSize: 4 * 1024 * 1024, // 4MB chunks,
+    simultaneousUploads: 2,
+    testChunks: false,
+    throttleProgressCallbacks: 1,
+    query: isUpdate
+      ? {
+          title: title.value,
+        }
+      : {
+          title: title.value,
+          section_id: props.sectionId,
+        },
+    headers: {
+      Authorization: localStorage.getItem('lm-access-token')
+        ? `Bearer ${localStorage.getItem('lm-access-token')}`
+        : null,
+    },
+  })
+
+  resumable.on('fileProgress', (file) => {
+    progress.value = Math.floor(file.progress() * 100)
+  })
+
+  resumable.on('fileSuccess', async () => {
+    toast.success(
+      isUpdate ? 'Video material updated successfully.' : 'Video material uploaded successfully.',
+    )
+
+    resumable.cancel()
+    progress.value = 0
+
+    try {
+      // Fetch the newly created/updated material
+      const { data } = await Axios.get(`/materials/section/${props.sectionId}`)
+
+      if (data.success && data.materials) {
+        let material = null
+
+        if (isUpdate && props.materialId) {
+          // Find the updated material by ID
+          material = data.materials.find((m) => m.id === Number(props.materialId))
+        } else {
+          // Find the newly created material by title (most recent with matching title)
+          const matchingMaterials = data.materials.filter((m) => m.title === title.value)
+          if (matchingMaterials.length > 0) {
+            // Get the one with the highest ID (most recently created)
+            material = matchingMaterials.reduce((latest, current) =>
+              current.id > latest.id ? current : latest,
+            )
+          }
+        }
+
+        if (material) {
+          resetForm()
+          emit('close')
+          emit('success', {
+            id: material.id,
+            title: material.title,
+            type: material.type,
+            content: material.content,
+            material_url: material.material_url,
+            sort_order: material.sort_order,
+          })
+          return
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching material after upload: ', err)
+    }
+
+    // Fallback: refresh if we couldn't fetch the material
+    resetForm()
+    emit('close')
+    emit('success', null)
+  })
+
+  resumable.on('fileError', (file, message) => {
+    console.error('File upload error: ', message)
+    const errorMessage =
+      typeof message === 'string'
+        ? message
+        : message?.message || `Failed to ${isUpdate} ? 'update' : 'upload' video. Please try again.`
+    toast.error(errorMessage)
+    progress.value = 0
+    video.value = null
+    videoError.value = ErrorMessage
+    if (resumable) {
+      resumable.cancel()
+    }
+  })
 }
+
+// Initialize resumable instance
+createResumableInstance()
+
+const uploadVideo = () => {
+  if (!video.value) {
+    return
+  }
+
+  // Recreate resumable instance to ensure correct endpoint and query params
+  createResumableInstance()
+
+  resumable.addFile(video.value)
+  resumable.on('fileAdded', () => {
+    resumable.upload()
+  })
+}
+
+// Watch title and materialId to recreate resumable instance when needed
+watch([title, () => props.materialId], () => {
+  if (resumable && (selectedType.value === 'video' || isEditMode.value)) {
+    createResumableInstance()
+  }
+})
 </script>
 
 <template>

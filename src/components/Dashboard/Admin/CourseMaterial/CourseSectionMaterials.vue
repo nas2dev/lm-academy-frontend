@@ -3,6 +3,7 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from 'vue-toastification'
 import Axios from '@/utils/axios'
+import Swal from 'sweetalert2'
 import addBtnIcon from '@/assets/images/add.png'
 import BreadCrumbs from '@/components/Dashboard/General/BreadCrumbs.vue'
 import MaterialCard from '@/components/Dashboard/Admin/CourseMaterial/MaterialCard.vue'
@@ -86,8 +87,52 @@ const handleUpdateMaterial = (material) => {
   selectedMaterialId.value = material.id
 }
 
-const handleDeleteMaterial = () => {
-  console.log('Material updated')
+const handleDeleteMaterial = async (material) => {
+  const result = await Swal.fire({
+    title: 'Delete Material',
+    text: `Are you sure you want to delete "${material.title}" ? This action cannot be undone.`,
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, delete it!',
+    cancelButtonText: 'No, cancel',
+    reverseButtons: true,
+    focusCancel: true,
+    customClass: {
+      confirmButton: 'bg-swalConfirm text-white hover:bg-swalConfirm/80',
+      cancelButton: 'bg-swalCancel text-white hover:bg-swalCancel/80',
+    },
+  })
+
+  if (!result.isConfirmed) {
+    return
+  }
+
+  try {
+    const { data } = await Axios.delete(`/materials/${material.id}`)
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to delete material')
+    }
+
+    toast.success(data.message || 'Material deleted successfully.')
+
+    // Remove the material from the list without refreshing
+    const index = materials.value.findIndex((m) => m.id === material.id)
+    if (index !== -1) {
+      materials.value.splice(index, 1)
+      // Update nr numbers for remaining materials
+      materials.value.forEach((m, idx) => {
+        m.nr = idx + 1
+      })
+    }
+  } catch (err) {
+    console.log('error: ', err)
+    toast.error(
+      err.response?.data?.message ||
+        err.message ||
+        'Failed to delete material. Please try again later.',
+    )
+  }
 }
 
 const moveUp = () => {

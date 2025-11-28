@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch } from 'vue'
 import FileIcon from '@/assets/fonts/feather-icons/icons/file.svg?component'
 
 const props = defineProps({
@@ -189,7 +189,7 @@ const removeVideo = () => {
         :style="{
           width: progress + '%',
           backgroundImage:
-            'linear-gradinet(45deg, rgba(255, 255, 255, 0.3 ) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.3) 75%, transparent 75%, transparnet )',
+            'linear-gradient(45deg, rgba(255, 255, 255, 0.3 ) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0.3) 75%, transparent 75%, transparent )',
           backgroundSize: '1rem 1rem',
         }"
       ></div>
