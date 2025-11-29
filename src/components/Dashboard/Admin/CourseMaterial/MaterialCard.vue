@@ -58,6 +58,10 @@ const handleMoveUp = () => {
   emits('moveUp', props.index)
 }
 
+const handleMoveDown = () => {
+  emits('moveDown', props.index)
+}
+
 const handleDragStart = () => {
   emits('dragStart', props.index)
 }

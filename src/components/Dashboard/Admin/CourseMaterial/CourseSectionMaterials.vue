@@ -78,10 +78,6 @@ const scrollToTop = () => {
   })
 }
 
-// Drag and Drop functions
-const draggedIndex = ref(null)
-const draggedOverIndex = ref(null)
-
 const handleUpdateMaterial = (material) => {
   showCreateModal.value = true
   selectedMaterialId.value = material.id
@@ -135,32 +131,106 @@ const handleDeleteMaterial = async (material) => {
   }
 }
 
-const moveUp = () => {
-  console.log('Material moved up')
+const updateSortOrder = async (materialsArray) => {
+  try {
+    const materialPayload = materialsArray.map((material, idx) => ({
+      id: material.id,
+      sort_order: idx + 1,
+    }))
+
+    const { data } = await Axios.post(`materials/section/${sectionId.value}/update-sort-order`, {
+      materials: materialPayload,
+    })
+
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to update sort order')
+    }
+
+    // Update local materials array with the new sort order
+    materials.value = materialsArray.map((material, idx) => ({
+      ...material,
+      sort_order: idx + 1,
+    }))
+
+    toast.success('Materials order updated successfully')
+  } catch (err) {
+    toast.error(
+      err.response?.data?.message ||
+        err.message ||
+        'Failed to update sort order. Please try again later.',
+    )
+
+    // Refresh to get correct order
+    fetchMaterials()
+  }
 }
 
-const moveDown = () => {
-  console.log('Material moved down')
+const moveUp = async (index) => {
+  if (index === 0) return
+
+  const newMaterials = [...materials.value]
+  const temp = newMaterials[index]
+  newMaterials[index] = newMaterials[index - 1]
+  newMaterials[index - 1] = temp
+
+  await updateSortOrder(newMaterials)
 }
 
-const handleDragStart = () => {
-  console.log('Material dragged start')
+const moveDown = async (index) => {
+  if (index === materials.value.length - 1) return
+
+  const newMaterials = [...materials.value]
+  const temp = newMaterials[index]
+  newMaterials[index] = newMaterials[index + 1]
+  newMaterials[index + 1] = temp
+
+  await updateSortOrder(newMaterials)
 }
 
-const handleDragOver = () => {
-  console.log('Material dragged over')
+// Drag and Drop functions
+const draggedIndex = ref(null)
+const draggedOverIndex = ref(null)
+
+const handleDragStart = (index) => {
+  draggedIndex.value = index
+}
+
+const handleDragOver = (event, index) => {
+  event.preventDefault()
+  draggedOverIndex.value = index
 }
 
 const handleDragLeave = () => {
-  console.log('Material dragged leave')
+  draggedOverIndex.value = null
 }
 
-const handleDrop = () => {
-  console.log('Material dropped')
+const handleDrop = async (event, dropIndex) => {
+  event.preventDefault()
+
+  if (draggedIndex.value === null || draggedIndex.value === dropIndex) {
+    draggedIndex.value = null
+    draggedOverIndex.value = null
+    return
+  }
+
+  const newMaterials = [...materials.value]
+  const draggedMaterial = newMaterials[draggedIndex.value]
+
+  // Remove dragged item
+  newMaterials.splice(draggedIndex.value, 1)
+
+  // Insert at new position
+  newMaterials.splice(dropIndex, 0, draggedMaterial)
+
+  draggedIndex.value = null
+  draggedOverIndex.value = null
+
+  await updateSortOrder(newMaterials)
 }
 
 const handleDragEnd = () => {
-  console.log('Material dragged end')
+  draggedIndex.value = null
+  draggedOverIndex.value = null
 }
 
 // Create Material Modal
