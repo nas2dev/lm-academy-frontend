@@ -22,54 +22,19 @@
           </router-link>
         </li>
 
-        <li class="text-xs font-bold mb-4 mt-6">
+        <li class="text-xs font-bold mb-4 mt-8">
           <i class="ti ti-dots nav-small-cap-icon text-lg hidden text-center"></i>
-          <span class="text-xs text-gray-400 font-semibold">UI COMPONENTS</span>
+          <span class="text-xs text-gray-400 font-semibold">COURSES</span>
         </li>
 
-        <li class="sidebar-item">
-          <a
+        <li class="sidebar-item" :class="{ selected: $route.name === 'UserCourseViewPage' }">
+          <router-link
+            :to="{ name: 'UserCourseViewPage' }"
             class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-            href="../../components/buttons.html"
+            :class="{ active: $route.name === 'UserCourseViewPage' }"
           >
-            <i class="ti ti-article ps-2 text-2xl"></i> <span>Buttons</span>
-          </a>
-        </li>
-
-        <li class="sidebar-item">
-          <a
-            class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-            href="../../components/alerts.html"
-          >
-            <i class="ti ti-alert-circle ps-2 text-2xl"></i> <span>Alerts</span>
-          </a>
-        </li>
-
-        <li class="sidebar-item">
-          <a
-            class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-            href="../../components/cards.html"
-          >
-            <i class="ti ti-cards ps-2 text-2xl"></i> <span>Card</span>
-          </a>
-        </li>
-
-        <li class="sidebar-item">
-          <a
-            class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-            href="../../components/forms.html"
-          >
-            <i class="ti ti-file-description ps-2 text-2xl"></i> <span>Forms</span>
-          </a>
-        </li>
-
-        <li class="sidebar-item">
-          <a
-            class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-            href="../../components/typography.html"
-          >
-            <i class="ti ti-typography ps-2 text-2xl"></i> <span>Typography</span>
-          </a>
+            <i class="ti ti-book ps-2 text-2xl"></i> <span>Courses</span>
+          </router-link>
         </li>
 
         <li class="text-xs font-bold mb-4 mt-8">

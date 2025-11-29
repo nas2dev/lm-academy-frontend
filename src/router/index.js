@@ -194,12 +194,12 @@ const router = createRouter({
         // User routes
         {
           path: 'courses',
-          name: 'UserCoureseViewPage',
-          component: () => import('../views/Dashboard/User/UserCourseView.vue'),
+          name: 'UserCourseViewPage',
+          component: () => import('../views/Dashboard/User/Course/UserCourseView.vue'),
           meta: {
             requiresAuth: true,
             requiresRole: "User",
-            title: "User Course Page"
+            title: "Courses"
           }
         },
       ]
