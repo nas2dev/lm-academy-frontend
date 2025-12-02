@@ -212,6 +212,16 @@ const router = createRouter({
             title: "Course Detail"
           }
         },
+        {
+          path: 'courses/:courseId/modules',
+          name: 'UserCourseModulesPage',
+          component: () => import('../views/Dashboard/User/Course/UserCourseModulesView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "User",
+            title: "Course Modules"
+          }
+        }
       ]
       // krejt routes qe kan / perpara jon routes absolute
     },

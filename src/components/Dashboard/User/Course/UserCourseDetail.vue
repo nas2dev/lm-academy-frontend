@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Axios from '@/utils/axios'
 import { useToast } from 'vue-toastification'
 import { getStorageUrl } from '@/utils/backendHelper'
@@ -11,6 +11,7 @@ import movieLineIcon from '@/assets/images/movie-line.png'
 
 const route = useRoute()
 const toast = useToast()
+const router = useRouter()
 
 const course = ref(null)
 const loading = ref(false)
@@ -70,6 +71,46 @@ const formatDate = (dateString) => {
   const month = (date.getMonth() + 1).toString().padStart(2, '0')
   const year = date.getFullYear()
   return `${month}/${year}`
+}
+
+const formatDuration = (minutes) => {
+  if (!minutes) return '00:00'
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0) {
+    return `${hours}:${mins.toString().padStart(2, '0')}`
+  }
+  return `${mins.toString().padStart(2, '0')}:00`
+}
+
+const toggleModule = (index) => {
+  expandedModules.value[index] = !expandedModules.value[index]
+}
+
+const handleStartCourse = async () => {
+  try {
+    loading.value = true
+    const { data } = await Axios.post(`/courses/user/${courseId.value}/enroll`)
+
+    if (!data.success) {
+      throw new Error(data?.message || 'Failed to start course')
+    }
+
+    toast.success(data.message || 'Successfully enrolled in the course')
+
+    // Push router to the course modules view
+    await fetchCourseDetails()
+  } catch (err) {
+    console.error(err)
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to start course'
+    toast.error(errorMessage)
+  } finally {
+    loading.value = false
+  }
+}
+
+const handleContinueCourse = () => {
+  router.push({ name: 'UserCourseModulesPage', params: { courseId: courseId.value } })
 }
 </script>
 
@@ -174,6 +215,131 @@ const formatDate = (dateString) => {
               <span class="text-gray-900"> {{ formatDate(course.updated_at) }}</span>
             </p>
           </div>
+        </div>
+
+        <!-- Course Content Section -->
+        <div class="space-y-4">
+          <h3 class="text-xl font-bold text-gray-800">Course Content</h3>
+
+          <!-- Hierarchical Content List -->
+          <div class="space-y-2">
+            <div class="flex items-center gap-3">
+              <img :src="folderLineIcon" alt="Modules" class="w-5 h-5" />
+              <p class="text-gray-800">{{ totalModules }} Modules</p>
+            </div>
+
+            <div class="flex items-center gap-3 pl-8">
+              <img :src="foldersLineIcon" alt="Sections" class="w-5 h-5" />
+              <p class="text-gray-800">{{ totalSections }} Sections</p>
+            </div>
+
+            <div class="flex items-center gap-3 pl-16">
+              <img :src="FileLineIcon" alt="Files" class="w-5 h-5" />
+              <p class="text-gray-800">{{ course.files }} Files</p>
+            </div>
+
+            <div class="flex items-center gap-3 pl-16">
+              <img :src="movieLineIcon" alt="Duration" class="w-5 h-5" />
+              <p class="text-gray-800">
+                {{ formatDuration(course.duration) }} minutes total length
+              </p>
+            </div>
+          </div>
+
+          <!-- Modules Accordion -->
+          <div class="w-full !mt-8 border border-gray-300 rounded-lg overflow-hidden">
+            <div
+              v-for="(module, index) in course.modules"
+              :key="module.id"
+              class="bg-gray-50 p-6 border-b border-gray-200 shadow-sm"
+              :class="{
+                'border-b-0': index === course.modules.length - 1,
+              }"
+            >
+              <!-- Module Header -->
+              <div
+                class="flex justify-between items-center cursor-pointer"
+                @click="toggleModule(index)"
+              >
+                <div class="flex items-center gap-4">
+                  <svg
+                    class="w-5 h-5 text-gray-800 transition-transform"
+                    :class="{ 'rotate-180': expandedModules[index] }"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                  <h4 class="font-semibold text-gray-800">{{ module.title }}</h4>
+                </div>
+                <p class="text-gray-600 text-sm">
+                  {{ module.total_sections }} Sections -
+                  {{ formatDuration(module.duration) }} minutes
+                </p>
+              </div>
+              <!-- Module Sections (Expanded Content) -->
+              <div v-if="expandedModules[index]" class="pl-9 mt-4 space-y-4">
+                <div
+                  v-for="section in module.sections"
+                  :key="section.id"
+                  class="flex justify-between items-center"
+                >
+                  <div class="flex items-center gap-4">
+                    <svg
+                      class="w-4 h-4 text-gray-800"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                      />
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    <p class="text-gray-800">{{ section.title }}</p>
+                  </div>
+                  <p class="text-gray-600 text-sm">
+                    {{ formatDuration(section.duration) }} minutes
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="w-full pt-4">
+          <button
+            v-if="courseStatus === 'new'"
+            :disabled="loading"
+            class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-lg transition-colors text-lg"
+            @click="handleStartCourse"
+          >
+            <span v-if="loading">Enrolling...</span>
+            <span v-else>Start Course</span>
+          </button>
+          <button
+            v-else
+            :disabled="loading"
+            class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-lg transition-colors text-lg"
+            @click="handleContinueCourse"
+          >
+            <span>Continue Course</span>
+          </button>
         </div>
       </div>
     </div>
