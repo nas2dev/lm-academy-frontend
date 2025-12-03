@@ -100,6 +100,8 @@ const handleStartCourse = async () => {
 
     // Push router to the course modules view
     await fetchCourseDetails()
+
+    router.push({ name: 'UserCourseModulesPage', params: { courseId: courseId.value } })
   } catch (err) {
     console.error(err)
     const errorMessage = err.response?.data?.message || err.message || 'Failed to start course'
