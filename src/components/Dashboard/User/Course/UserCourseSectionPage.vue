@@ -90,10 +90,10 @@ const handleMarkAsCompleted = async () => {
       ? `/materials/user/section/${sectionId.value}/incomplete`
       : `/materials/user/section/${sectionId.value}/complete`
 
-    console.log('endpoint', endpoint)
+    // console.log('endpoint', endpoint)
 
-    const data = { success: true, message: 'Section status updated successfully' } // temporary data
-    //   const { data } = await Axios.post(endpoint)
+    // const data = { success: true, message: 'Section status updated successfully' } // temporary data
+    const { data } = await Axios.post(endpoint)
 
     if (!data.success) {
       throw new Error(data?.message || 'Failed to update section status')
@@ -160,7 +160,14 @@ onMounted(() => {
 
 <template>
   <div class="w-full py-4 flex flex-col justify-start items-start gap-6">
-    <p class="text-2xl font-semibold text-black">Course Section</p>
+    <div class="flex justify-between items-center w-full">
+      <p class="text-2xl font-semibold text-black">Course Section</p>
+      <router-link
+        :to="{ name: 'UserCourseModulesPage', params: { courseId: courseId } }"
+        class="text-sm font-semibold text-[#1F8EFA] hover:text-[#1979d6] hover:underline"
+        >Modules</router-link
+      >
+    </div>
 
     <!-- loading state -->
     <div v-if="loading" class="flex justify-center items-center py-12 w-full">
