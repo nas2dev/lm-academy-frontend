@@ -189,6 +189,16 @@ const router = createRouter({
             title: "Admin Send Invite Page"
           }
         },
+        {
+          path: 'manage/course-stats',
+          name: 'AdminCourseStatsViewPage',
+          component: () => import('../views/Dashboard/Admin/CourseStats/CourseStatsView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Course Statistics"
+          }
+        },
 
 
         // User routes
