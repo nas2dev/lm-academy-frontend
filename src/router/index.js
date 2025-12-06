@@ -199,6 +199,16 @@ const router = createRouter({
             title: "Course Statistics"
           }
         },
+        {
+          path: 'manage/scoreboard',
+          name: 'AdminScoreboardViewPage',
+          component: () => import('../views/Dashboard/Admin/Scoreboard/ScoreboardView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Scoreboard"
+          }
+        },
 
 
         // User routes
@@ -240,6 +250,16 @@ const router = createRouter({
             requiresAuth: true,
             requiresRole: "User",
             title: "Course Section"
+          }
+        },
+        {
+          path: '/scoreboard',
+          name: 'UserScoreboardViewPage',
+          component: () => import('../views/Dashboard/User/Scoreboard/ScoreboardView.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "User",
+            title: "Scoreboard"
           }
         }
       ]

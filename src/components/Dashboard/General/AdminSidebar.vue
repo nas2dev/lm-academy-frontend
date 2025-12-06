@@ -72,6 +72,16 @@
           </router-link>
         </li>
 
+        <li class="sidebar-item" :class="{ selected: $route.name === 'AdminScoreboardViewPage' }">
+          <router-link
+            :to="{ name: 'AdminScoreboardViewPage' }"
+            class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
+            :class="{ active: $route.name === 'AdminScoreboardViewPage' }"
+          >
+            <i class="ti ti-trophy ps-2 text-2xl"></i> <span>Scoreboard</span>
+          </router-link>
+        </li>
+
         <li class="text-xs font-bold mb-4 mt-8">
           <i class="ti ti-dots nav-small-cap-icon text-lg hidden text-center"></i>
           <span class="text-xs text-gray-400 font-semibold">AUTH</span>
