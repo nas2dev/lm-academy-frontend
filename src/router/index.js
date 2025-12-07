@@ -261,6 +261,37 @@ const router = createRouter({
             requiresRole: "User",
             title: "Scoreboard"
           }
+        },
+
+        // Random Game routes
+        {
+          path: '/random-game',
+          name: 'RandomGame',
+          component: () => import('../views/Dashboard/RandomGame/RandomGame.vue'),
+          meta: {
+            requiresAuth: true,
+            title: "Random Game"
+          }
+        },
+        {
+          path: '/random-game/lists',
+          name: 'RandomGameLists',
+          component: () => import('../views/Dashboard/RandomGame/RandomGameLists.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "Random Game Lists"
+          }
+        },
+        {
+          path: '/random-game/lists/new',
+          name: 'RandomGameNewList',
+          component: () => import('../views/Dashboard/RandomGame/RandomGameNewList.vue'),
+          meta: {
+            requiresAuth: true,
+            requiresRole: "Admin",
+            title: "New Random Game List"
+          }
         }
       ]
       // krejt routes qe kan / perpara jon routes absolute

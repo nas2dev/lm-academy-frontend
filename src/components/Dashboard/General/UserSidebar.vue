@@ -52,13 +52,14 @@
           <span class="text-xs text-gray-400 font-semibold">Games</span>
         </li>
 
-        <li class="sidebar-item">
-          <a
+        <li class="sidebar-item" :class="{ selected: $route.name === 'RandomGame' }">
+          <router-link
+            :to="{ name: 'RandomGame' }"
             class="sidebar-link gap-3 py-2.5 my-1 text-base flex items-center relative rounded-md text-gray-500 w-full"
-            href="../../pages/authentication-login.html"
+            :class="{ active: $route.name === 'RandomGame' }"
           >
-            <i class="ti ti-login ps-2 text-2xl"></i> <span>Random Game</span>
-          </a>
+            <i class="ti ti-dice ps-2 text-2xl"></i> <span>Random Game</span>
+          </router-link>
         </li>
 
         <li class="text-xs font-bold mb-4 mt-8">
