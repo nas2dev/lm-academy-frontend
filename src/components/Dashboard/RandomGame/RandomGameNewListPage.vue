@@ -5,14 +5,15 @@ import Axios from '@/utils/axios'
 import Swal from 'sweetalert2'
 import { useToast } from 'vue-toastification'
 import PlusIcon from '@/assets/fonts/feather-icons/icons/add-icon.svg?component'
-import MinusIcon from '@/assets/fonts/feather-icons/icons/minus.svg?component'
+import PlusCircleIcon from '@/assets/images/icons/plus-circle-icon.png'
 
 const router = useRouter()
 const toast = useToast()
 
 const listName = ref('')
-const selectedUsers = ref([])
 const availableUsers = ref([])
+const allUsers = ref([]) // Store all users from backend
+const selectedRole = ref('') // 'User' or 'Admin'
 const emailTextarea = ref('')
 const existingLists = ref([])
 const validationErrors = ref({})
@@ -35,18 +36,37 @@ const loadExistingLists = async () => {
   }
 }
 
-// Load available users
-const loadAvailableUsers = async () => {
-  loadingUsers.value = true
+// Load all users (for email lookup when adding to list)
+const loadAllUsers = async () => {
   try {
     const response = await Axios.get('/users/active-users-for-dropdown')
+    if (response.data.success) {
+      allUsers.value = response.data.users || []
+    }
+  } catch (error) {
+    console.error('Error loading all users:', error)
+    // Don't show error toast here, just log it
+    allUsers.value = []
+  }
+}
+
+// Load users by selected role
+const loadUsersByRole = async (role) => {
+  if (!role) {
+    availableUsers.value = []
+    return
+  }
+
+  loadingUsers.value = true
+  try {
+    const response = await Axios.get(`/users/active-users-by-role?role=${role}`)
     if (response.data.success) {
       availableUsers.value = response.data.users || []
     } else {
       throw new Error(response.data.message || 'Failed to load users')
     }
   } catch (error) {
-    console.error('Error loading users:', error)
+    console.error('Error loading users by role:', error)
     toast.error(error.response?.data?.message || 'Failed to load users')
     availableUsers.value = []
   } finally {
@@ -54,23 +74,33 @@ const loadAvailableUsers = async () => {
   }
 }
 
-// Add user from dropdown
-const addUserFromDropdown = (userId) => {
-  const user = availableUsers.value.find((u) => u.id === userId)
-  if (user && !selectedUsers.value.find((u) => u.id === userId)) {
-    selectedUsers.value.push({
-      id: user.id,
-      email: user.email,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      source: 'dropdown',
-    })
-  }
+// Handle role selection change
+const handleRoleChange = (event) => {
+  selectedRole.value = event.target.value
+  loadUsersByRole(selectedRole.value)
 }
 
-// Remove user from selection
-const removeUserFromSelection = (userId) => {
-  selectedUsers.value = selectedUsers.value.filter((u) => u.id !== userId)
+// Add user to textarea (with plus icon click)
+const addUserToTextarea = (user) => {
+  // Check if user email already exists in textarea
+  const existingEmails = parseEmailsFromTextarea()
+  if (existingEmails.includes(user.email.toLowerCase())) {
+    toast.warning('User already added to list')
+    return
+  }
+
+  // Add email to textarea with comma separator
+  if (emailTextarea.value.trim()) {
+    // Add comma if textarea doesn't end with comma
+    const trimmed = emailTextarea.value.trim()
+    if (!trimmed.endsWith(',')) {
+      emailTextarea.value = trimmed + ', ' + user.email
+    } else {
+      emailTextarea.value = trimmed + ' ' + user.email
+    }
+  } else {
+    emailTextarea.value = user.email
+  }
 }
 
 // Parse emails from textarea
@@ -88,29 +118,18 @@ const parseEmailsFromTextarea = () => {
   return emails
 }
 
-// Get all selected users (dropdown + textarea)
+// Get all selected users from textarea
 const allSelectedUsers = computed(() => {
-  const dropdownUsers = selectedUsers.value.filter((u) => u.source === 'dropdown')
   const textareaEmails = parseEmailsFromTextarea()
 
-  // Combine and remove duplicates
-  const allUsers = [...dropdownUsers]
-  const seenEmails = new Set(dropdownUsers.map((u) => u.email.toLowerCase()))
-
-  textareaEmails.forEach((email) => {
-    if (!seenEmails.has(email.toLowerCase())) {
-      allUsers.push({
-        id: `email-${email}`,
-        email: email,
-        first_name: '',
-        last_name: '',
-        source: 'textarea',
-      })
-      seenEmails.add(email.toLowerCase())
-    }
-  })
-
-  return allUsers
+  // Convert emails to user objects for preview
+  return textareaEmails.map((email) => ({
+    id: `email-${email}`,
+    email: email,
+    first_name: '',
+    last_name: '',
+    source: 'textarea',
+  }))
 })
 
 // Validate form
@@ -144,26 +163,6 @@ const validateForm = () => {
   return true
 }
 
-// Add users to new list (after creation)
-const addUsersToNewList = async (listId, userIds) => {
-  if (userIds.length === 0) return
-
-  try {
-    // Add users one by one (or batch if backend supports it)
-    for (const userId of userIds) {
-      await Axios.post(`/lists/${listId}/add-users`, {
-        user_id: userId,
-      })
-    }
-  } catch (error) {
-    console.error('Error adding users to list:', error)
-    // Don't throw - list is created, users can be added later
-    toast.warning(
-      'List created but some users could not be added. You can add them manually later.',
-    )
-  }
-}
-
 // Create list
 const createList = async () => {
   if (!validateForm()) {
@@ -173,27 +172,52 @@ const createList = async () => {
 
   loading.value = true
   try {
-    // Create the list
-    const response = await Axios.post('/lists/store', {
+    // Get emails from textarea
+    const textareaEmails = parseEmailsFromTextarea()
+
+    // Find user IDs from emails (for users that exist in the system)
+    const userIds = []
+    for (const email of textareaEmails) {
+      const user = allUsers.value.find((u) => u.email.toLowerCase() === email.toLowerCase())
+      if (user && user.id) {
+        userIds.push(user.id)
+      }
+    }
+
+    // Create the list with users
+    const payload = {
       list_name: listName.value.trim(),
-    })
+      user_ids: userIds, // Send user IDs for users that exist
+      emails: textareaEmails, // Send all emails (backend can handle both)
+    }
+
+    console.log('Creating list with payload:', payload)
+
+    const response = await Axios.post('/lists/store', payload)
 
     if (response.data.success && response.data.list) {
-      const newListId = response.data.list.id
+      // Check if there are warnings (invalid/not found emails)
+      let successMessage = 'List created successfully!'
+      let htmlContent = successMessage
 
-      // Add users from dropdown selection
-      const dropdownUserIds = selectedUsers.value
-        .filter((u) => u.source === 'dropdown')
-        .map((u) => u.id)
-
-      if (dropdownUserIds.length > 0) {
-        await addUsersToNewList(newListId, dropdownUserIds)
+      if (response.data.warnings && response.data.warnings.length > 0) {
+        htmlContent = `
+          <div>
+            <p class="mb-3">${successMessage}</p>
+            <div class="mt-4 pt-4 border-t border-gray-200">
+              <p class="text-sm font-semibold text-yellow-600 mb-2">Note:</p>
+              <ul class="text-xs text-left text-gray-600 space-y-1">
+                ${response.data.warnings.map((warning) => `<li>• ${warning}</li>`).join('')}
+              </ul>
+            </div>
+          </div>
+        `
       }
 
-      // Show success message
+      // Show success message with warnings if any
       await Swal.fire({
         title: 'Success',
-        text: 'List created successfully!',
+        html: htmlContent,
         icon: 'success',
         confirmButtonText: 'OK',
         customClass: {
@@ -208,17 +232,44 @@ const createList = async () => {
     }
   } catch (error) {
     console.error('Error creating list:', error)
-    const errorMessage = error.response?.data?.message || error.message || 'Failed to create list'
 
-    await Swal.fire({
-      title: 'Error',
-      text: errorMessage,
-      icon: 'error',
-      confirmButtonText: 'OK',
-      customClass: {
-        confirmButton: 'bg-swalCancel text-white hover:bg-swalCancel/80',
-      },
-    })
+    // Handle validation errors
+    if (error.response?.status === 422 && error.response?.data?.errors) {
+      const validationErrors = error.response.data.errors
+      let errorHtml =
+        '<div class="text-left"><p class="font-semibold mb-2">Validation errors:</p><ul class="text-sm space-y-1">'
+
+      Object.keys(validationErrors).forEach((field) => {
+        validationErrors[field].forEach((message) => {
+          errorHtml += `<li class="text-red-600">• ${message}</li>`
+        })
+      })
+
+      errorHtml += '</ul></div>'
+
+      await Swal.fire({
+        title: 'Validation Error',
+        html: errorHtml,
+        icon: 'error',
+        confirmButtonText: 'OK',
+        customClass: {
+          confirmButton: 'bg-swalCancel text-white hover:bg-swalCancel/80',
+        },
+      })
+    } else {
+      // Handle other errors
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to create list'
+
+      await Swal.fire({
+        title: 'Error',
+        text: errorMessage,
+        icon: 'error',
+        confirmButtonText: 'OK',
+        customClass: {
+          confirmButton: 'bg-swalCancel text-white hover:bg-swalCancel/80',
+        },
+      })
+    }
   } finally {
     loading.value = false
   }
@@ -226,174 +277,197 @@ const createList = async () => {
 
 onMounted(() => {
   loadExistingLists()
-  loadAvailableUsers()
+  loadAllUsers() // Load all users for email lookup
 })
 </script>
 
 <template>
-  <div class="p-6">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-semibold">Random Game : New List</h2>
-      <router-link
-        :to="{ name: 'RandomGameLists' }"
-        class="text-blue-600 hover:text-blue-800 font-medium"
-      >
-        Lists
-      </router-link>
-    </div>
-
-    <!-- Instructions -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-      <p class="text-sm text-gray-700">
-        Create a new list with users, the name of the list should be unique:
-      </p>
-    </div>
-
-    <!-- Check List Names dropdown (for reference) -->
-    <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 mb-2"> Check List Names: </label>
-      <select
-        :disabled="loadingLists"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-      >
-        <option value="">-- Existing list names (for reference) --</option>
-        <option v-for="list in existingLists" :key="list.id" :value="list.id">
-          {{ list.list_name }}
-        </option>
-      </select>
-    </div>
-
-    <!-- Name of the list input -->
-    <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 mb-2">
-        Name of the list <span class="text-red-500">*</span>
-      </label>
-      <input
-        v-model="listName"
-        type="text"
-        placeholder="e.g. list of 2023 generation..."
-        class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        :class="validationErrors.listName ? 'border-red-500' : 'border-gray-300'"
-      />
-      <p v-if="validationErrors.listName" class="mt-1 text-sm text-red-600">
-        {{ validationErrors.listName }}
-      </p>
-      <p v-else class="mt-1 text-xs text-gray-500">Must be 2-100 characters and unique</p>
-    </div>
-
-    <!-- Users dropdown -->
-    <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 mb-2"> Users: </label>
-      <select
-        @change="
-          addUserFromDropdown($event.target.value)
-          $event.target.value = ''
-        "
-        :disabled="loadingUsers"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      >
-        <option value="">-- Select a user to add --</option>
-        <option
-          v-for="user in availableUsers"
-          :key="user.id"
-          :value="user.id"
-          :disabled="selectedUsers.some((u) => u.id === user.id)"
+  <div>
+    <div class="flex justify-between items-center mb-2">
+      <h1 class="text-2xl font-semibold">Random Game : New List</h1>
+      <div class="flex justify-end">
+        <router-link
+          :to="{ name: 'RandomGameLists' }"
+          class="text-[#0085DB] hover:text-blue-700 font-medium"
         >
-          {{ user.email }} ({{ user.first_name }} {{ user.last_name }})
-        </option>
-      </select>
+          Lists
+        </router-link>
+      </div>
+    </div>
 
-      <!-- Display selected users -->
-      <div v-if="selectedUsers.length > 0" class="mt-3">
-        <p class="text-sm font-medium text-gray-700 mb-2">Selected Users:</p>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div
-            v-for="user in selectedUsers"
-            :key="user.id"
-            class="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded-lg"
-          >
-            <span class="text-sm text-gray-600">{{ user.email }}</span>
-            <button
-              @click="removeUserFromSelection(user.id)"
-              class="text-red-600 hover:text-red-800"
-              title="Remove"
+    <div class="card">
+      <div class="card-body">
+        <div class="flex flex-col gap-3">
+          <!-- Instructions -->
+          <p class="text-lg text-black my-2">
+            Create a new list with users, the name of the list should be unique:
+          </p>
+
+          <!-- Check List Names dropdown (for reference) -->
+          <div class="relative">
+            <p class="text-black font-semibold mb-2">Check List Names:</p>
+            <select
+              :disabled="loadingLists"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed bg-gray-50"
             >
-              <MinusIcon class="w-4 h-4" />
+              <option value="">-- Existing list names (for reference) --</option>
+              <option v-for="list in existingLists" :key="list.id" :value="list.id">
+                {{ list.list_name }}
+              </option>
+            </select>
+          </div>
+
+          <hr class="mt-5 border-orange-300" />
+
+          <!-- Name of the list input -->
+          <div class="flex flex-col gap-2">
+            <p class="text-black font-semibold">
+              Name of the list <span class="text-red-500">*</span>
+            </p>
+            <input
+              v-model="listName"
+              type="text"
+              placeholder="e.g. list of 2023 generation..."
+              class="w-full px-3 py-2 border rounded-md shadow-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              :class="validationErrors.listName ? 'border-red-500' : 'border-gray-300'"
+            />
+            <p v-if="validationErrors.listName" class="text-sm text-red-600">
+              {{ validationErrors.listName }}
+            </p>
+            <p v-else class="text-xs text-gray-500">Must be 2-100 characters and unique</p>
+          </div>
+
+          <hr class="mt-5 border-orange-300" />
+
+          <!-- Role and Users selection -->
+          <div class="flex flex-col gap-3">
+            <p class="text-black font-semibold">Users:</p>
+
+            <!-- Role selector -->
+            <div class="relative">
+              <select
+                v-model="selectedRole"
+                @change="handleRoleChange"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              >
+                <option value="">-- Select role --</option>
+                <option value="User">Users</option>
+                <option value="Admin">Admins</option>
+              </select>
+            </div>
+
+            <!-- Display users based on selected role -->
+            <div v-if="selectedRole && availableUsers.length > 0" class="mt-2">
+              <p class="text-sm font-semibold text-black mb-2">
+                {{ selectedRole }}s ({{ availableUsers.length }}):
+              </p>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div
+                  v-for="(user, index) in availableUsers"
+                  :key="user.id"
+                  class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md"
+                >
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium text-black">{{ index + 1 }}.</span>
+                    <span class="text-gray-600">{{ user.email }}</span>
+                  </div>
+                  <button
+                    @click="addUserToTextarea(user)"
+                    class="flex items-center justify-center w-7 h-7 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                    title="Add user"
+                  >
+                    <img :src="PlusCircleIcon" alt="Add user" class="w-7 h-7" />
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div
+              v-else-if="selectedRole && !loadingUsers"
+              class="text-sm text-gray-500 italic mt-2"
+            >
+              No {{ selectedRole }}s available.
+            </div>
+          </div>
+
+          <hr class="mt-5 border-orange-300" />
+
+          <!-- List users textarea -->
+          <div class="flex flex-col gap-2">
+            <p class="text-black font-semibold">List users:</p>
+            <textarea
+              v-model="emailTextarea"
+              placeholder="List users, separated by commas (e.g., user1@example.com, user2@example.com)"
+              rows="4"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-gray-600"
+            ></textarea>
+            <p class="text-xs text-gray-500">
+              Enter email addresses separated by commas. These will be added to the list.
+            </p>
+
+            <!-- Display parsed emails -->
+            <div v-if="parseEmailsFromTextarea().length > 0" class="mt-2">
+              <p class="text-sm font-semibold text-black mb-2">
+                Emails from textarea ({{ parseEmailsFromTextarea().length }}):
+              </p>
+              <div class="bg-gray-50 border border-gray-200 rounded-md p-3">
+                <div class="flex flex-wrap gap-2">
+                  <span
+                    v-for="(email, index) in parseEmailsFromTextarea()"
+                    :key="index"
+                    class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
+                  >
+                    {{ email }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Preview all selected users -->
+          <div v-if="allSelectedUsers.length > 0" class="flex flex-col gap-3">
+            <p class="text-black font-semibold">
+              Preview: All Users to be Added ({{ allSelectedUsers.length }})
+            </p>
+            <div class="bg-gray-50 border border-gray-200 rounded-md p-4 max-h-64 overflow-y-auto">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div
+                  v-for="(user, index) in allSelectedUsers"
+                  :key="user.id"
+                  class="text-sm text-gray-600 flex items-center gap-2"
+                >
+                  <span class="font-medium">{{ index + 1 }}.</span>
+                  <span>{{ user.email }}</span>
+                  <span
+                    v-if="user.source === 'textarea'"
+                    class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded"
+                  >
+                    Email
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Create button -->
+          <div class="flex justify-center mt-6">
+            <button
+              @click="createList"
+              :disabled="loading || !listName.trim()"
+              class="px-20 py-3 bg-green-500 text-white rounded-full font-semibold hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <PlusIcon v-if="!loading" class="w-5 h-5" />
+              <span v-if="loading">Creating...</span>
+              <span v-else>Create</span>
             </button>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- List users textarea -->
-    <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 mb-2"> List users </label>
-      <textarea
-        v-model="emailTextarea"
-        placeholder="List users, separated by commas (e.g., user1@example.com, user2@example.com)"
-        rows="4"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      ></textarea>
-      <p class="mt-1 text-xs text-gray-500">
-        Enter email addresses separated by commas. These will be added to the list.
-      </p>
-
-      <!-- Display parsed emails -->
-      <div v-if="parseEmailsFromTextarea().length > 0" class="mt-3">
-        <p class="text-sm font-medium text-gray-700 mb-2">
-          Emails from textarea ({{ parseEmailsFromTextarea().length }}):
-        </p>
-        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-          <div class="flex flex-wrap gap-2">
-            <span
-              v-for="(email, index) in parseEmailsFromTextarea()"
-              :key="index"
-              class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
-            >
-              {{ email }}
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Preview all selected users -->
-    <div v-if="allSelectedUsers.length > 0" class="mb-6">
-      <h3 class="text-lg font-semibold mb-3">
-        Preview: All Users to be Added ({{ allSelectedUsers.length }})
-      </h3>
-      <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 max-h-64 overflow-y-auto">
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-          <div
-            v-for="(user, index) in allSelectedUsers"
-            :key="user.id"
-            class="text-sm text-gray-600 flex items-center gap-2"
-          >
-            <span class="font-medium">{{ index + 1 }}.</span>
-            <span>{{ user.email }}</span>
-            <span
-              v-if="user.source === 'textarea'"
-              class="text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded"
-            >
-              Email
-            </span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Create button -->
-    <div class="flex justify-center">
-      <button
-        @click="createList"
-        :disabled="loading || !listName.trim()"
-        class="px-8 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-      >
-        <PlusIcon v-if="!loading" class="w-5 h-5" />
-        <span v-if="loading">Creating...</span>
-        <span v-else>Create</span>
-      </button>
-    </div>
   </div>
 </template>
+
+<style scoped>
+* {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+</style>
