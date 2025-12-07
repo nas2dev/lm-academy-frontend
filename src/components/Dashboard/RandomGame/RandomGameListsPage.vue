@@ -1,14 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
 import Axios from '@/utils/axios'
 import Swal from 'sweetalert2'
 import { useToast } from 'vue-toastification'
 import TrashIcon from '@/assets/fonts/feather-icons/icons/trash-2.svg?component'
-import PlusIcon from '@/assets/fonts/feather-icons/icons/add-icon.svg?component'
-import MinusIcon from '@/assets/fonts/feather-icons/icons/minus.svg?component'
+import PlusCircleIcon from '@/assets/images/icons/plus-circle-icon.png'
+import MinusCircleIcon from '@/assets/images/icons/minus-circle-icon.png'
 
-const router = useRouter()
 const toast = useToast()
 
 const lists = ref([])
@@ -238,126 +236,141 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="p-6">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-2xl font-semibold">Random Game Lists</h2>
-      <router-link
-        :to="{ name: 'RandomGameNewList' }"
-        class="text-blue-600 hover:text-blue-800 font-medium"
-      >
-        Add a new List
-      </router-link>
-    </div>
-
-    <!-- Instructions -->
-    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-      <p class="text-sm text-gray-700">
-        Select list from below to edit it or just check the users in it:
-      </p>
-    </div>
-
-    <!-- Select List -->
-    <div class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 mb-2"> Select List: </label>
-      <select
-        v-model="selectedListId"
-        @change="onListChange(selectedListId)"
-        :disabled="loadingLists"
-        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-      >
-        <option :value="null">-- Select a list --</option>
-        <option v-for="list in lists" :key="list.id" :value="list.id">
-          {{ list.list_name }}
-        </option>
-      </select>
-    </div>
-
-    <!-- List Name Update -->
-    <div v-if="selectedListId" class="mb-6">
-      <label class="block text-sm font-medium text-gray-700 mb-2"> List Name </label>
-      <div class="flex gap-2">
-        <input
-          v-model="listName"
-          type="text"
-          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          placeholder="Enter list name"
-        />
-        <button
-          @click="updateListName"
-          :disabled="loading || !listName.trim()"
-          class="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+  <div>
+    <div class="flex justify-between items-center mb-2">
+      <h1 class="text-2xl font-semibold">Random Game Lists</h1>
+      <div class="flex justify-end">
+        <router-link
+          :to="{ name: 'RandomGameNewList' }"
+          class="text-[#0085DB] hover:text-blue-700 font-medium"
         >
-          Update
-        </button>
+          Add a new List
+        </router-link>
       </div>
     </div>
 
-    <!-- Members of the list -->
-    <div v-if="selectedList && selectedList.users" class="mb-6">
-      <h3 class="text-lg font-semibold mb-3">Members of the list</h3>
-      <div v-if="selectedList.users.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div
-          v-for="(user, index) in selectedList.users"
-          :key="user.id"
-          class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
-        >
-          <div class="flex items-center gap-2">
-            <span class="font-medium text-gray-700">{{ index + 1 }}.</span>
-            <span class="text-gray-600">{{ user.email }}</span>
+    <div class="card">
+      <div class="card-body">
+        <div class="flex flex-col gap-3">
+          <!-- Instructions -->
+          <p class="text-lg text-black my-2">
+            Select list from below to edit it or just check the users in it:
+          </p>
+
+          <!-- Select List -->
+          <div class="relative">
+            <p class="text-black font-semibold mb-2">Select List:</p>
+            <select
+              v-model="selectedListId"
+              @change="onListChange(selectedListId)"
+              :disabled="loadingLists"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            >
+              <option :value="null">-- Select a list --</option>
+              <option v-for="list in lists" :key="list.id" :value="list.id">
+                {{ list.list_name }}
+              </option>
+            </select>
           </div>
-          <button
-            @click="removeUser(user.id)"
-            :disabled="loading"
-            class="text-red-600 hover:text-red-800 disabled:opacity-50"
-            title="Remove user"
-          >
-            <MinusIcon class="w-5 h-5" />
-          </button>
+
+          <hr v-if="selectedListId" class="mt-5 mx-2 border-orange-300" />
+
+          <!-- List Name Update -->
+          <div v-if="selectedListId" class="flex flex-col gap-3">
+            <p class="text-black font-semibold">List Name:</p>
+            <div class="flex gap-2">
+              <input
+                v-model="listName"
+                type="text"
+                class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                placeholder="Enter list name"
+              />
+              <button
+                @click="updateListName"
+                :disabled="loading || !listName.trim()"
+                class="px-6 py-2 bg-[#F8C076] text-white rounded-md hover:bg-[#F8C076]/90 disabled:bg-gray-400 disabled:cursor-not-allowed font-medium"
+              >
+                Update
+              </button>
+            </div>
+          </div>
+
+          <hr v-if="selectedListId" class="mt-5 border-orange-300" />
+
+          <!-- Members of the list -->
+          <div v-if="selectedList && selectedList.users" class="flex flex-col gap-3 my-6">
+            <p class="text-black font-semibold">Members of the list:</p>
+            <div v-if="selectedList.users.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div
+                v-for="(user, index) in selectedList.users"
+                :key="user.id"
+                class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-black">{{ index + 1 }}.</span>
+                  <span class="text-gray-600">{{ user.email }}</span>
+                </div>
+                <button
+                  @click="removeUser(user.id)"
+                  :disabled="loading"
+                  class="flex items-center justify-center w-7 h-7 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                  title="Remove user"
+                >
+                  <img :src="MinusCircleIcon" alt="Remove user" class="w-7 h-7" />
+                </button>
+              </div>
+            </div>
+            <div v-else class="text-sm text-gray-500 italic">No users in this list yet.</div>
+          </div>
+
+          <!-- Add new user section -->
+          <div v-if="selectedListId" class="flex flex-col gap-3">
+            <p class="text-black font-semibold">Add a new user to the current list:</p>
+
+            <div v-if="availableUsers.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div
+                v-for="(user, index) in availableUsers"
+                :key="user.id"
+                class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="font-medium text-black">{{ index + 1 }}.</span>
+                  <span class="text-gray-600">{{ user.email }}</span>
+                </div>
+                <button
+                  @click="addUser(user.id)"
+                  :disabled="loading"
+                  class="flex items-center justify-center w-7 h-7 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+                  title="Add user"
+                >
+                  <img :src="PlusCircleIcon" alt="Add user" class="w-7 h-7" />
+                </button>
+              </div>
+            </div>
+            <div v-else-if="!loadingUsers" class="text-sm text-gray-500 italic">
+              No available users to add.
+            </div>
+          </div>
+
+          <!-- Delete List Button -->
+          <div v-if="selectedListId" class="flex justify-end mt-6">
+            <button
+              @click="deleteList"
+              :disabled="loading"
+              class="px-6 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2 font-medium"
+            >
+              <TrashIcon class="w-6 h-6" />
+              <span>Delete List</span>
+            </button>
+          </div>
         </div>
       </div>
-      <div v-else class="text-sm text-gray-500 italic">No users in this list yet.</div>
-    </div>
-
-    <!-- Add new user section -->
-    <div v-if="selectedListId" class="mb-6">
-      <h3 class="text-lg font-semibold mb-3">Add a new user to the current list</h3>
-
-      <div v-if="availableUsers.length > 0" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div
-          v-for="(user, index) in availableUsers"
-          :key="user.id"
-          class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg"
-        >
-          <div class="flex items-center gap-2">
-            <span class="font-medium text-gray-700">{{ index + 1 }}.</span>
-            <span class="text-gray-600">{{ user.email }}</span>
-          </div>
-          <button
-            @click="addUser(user.id)"
-            :disabled="loading"
-            class="text-green-600 hover:text-green-800 disabled:opacity-50"
-            title="Add user"
-          >
-            <PlusIcon class="w-5 h-5" />
-          </button>
-        </div>
-      </div>
-      <div v-else-if="!loadingUsers" class="text-sm text-gray-500 italic">
-        No available users to add.
-      </div>
-    </div>
-
-    <!-- Delete List Button -->
-    <div v-if="selectedListId" class="flex justify-end mt-6">
-      <button
-        @click="deleteList"
-        :disabled="loading"
-        class="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
-      >
-        <TrashIcon class="w-5 h-5" />
-        <span>Delete List</span>
-      </button>
     </div>
   </div>
 </template>
+
+<style scoped>
+* {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+}
+</style>
