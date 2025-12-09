@@ -1,0 +1,36 @@
+name: Vue.js CI/CD with FTP
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "22" # Specify your Node.js version here
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Project
+        run: npm run build
+
+      - name: List Output Files
+        run: ls -l dist/ # Assuming 'dist' is your build directory, change as needed
+
+      - name: FTP Deploy
+        uses: SamKirkland/FTP-Deploy-Action@4.1.0
+        with:
+          server: ftp.codingtrainingacademy.com # Change to your FTP server, ensure it points to public_html
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: dist/ # Change if your build directory is different
+          server-dir: /lm-academy/lm-academy-frontend/ # Directory on the server where files should be uploaded
