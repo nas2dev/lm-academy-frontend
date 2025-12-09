@@ -1,7 +1,5 @@
 export const getBackendBaseUrl = () => {
-    return import.meta.env.NODE_ENV === 'production'
-        ? 'https://learnmoreacademy.com'
-        : 'http://localhost:8000'
+    return import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api'
 }
 
 export const getStorageUrl = (path, fallback = null) => {
