@@ -1,13 +1,17 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import Axios from '@/utils/axios'
 
 const quote = ref('')
 const author = ref('')
 
 const fetchZenQuoteApi = async () => {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/zen-quote')
-    const data = await response.json()
+    // const response = await fetch('http://127.0.0.1:8000/api/zen-quote')
+    // const data = await response.json()
+
+    const response = await Axios.get('/zen-quote')
+    const data = response.data
 
     if (data.success) {
       quote.value = data.quote.text

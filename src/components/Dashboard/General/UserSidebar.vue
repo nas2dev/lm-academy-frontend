@@ -1,7 +1,7 @@
 <template>
   <div class="p-4">
     <a href="../../" class="text-nowrap">
-      <img src="../../assets/images/logos/logo-light.svg" alt="Logo-Dark" />
+      <img src="../../../assets/images/logos/logo-light.svg" alt="Logo-Dark" />
     </a>
   </div>
   <div class="scroll-sidebar" data-simplebar="">
