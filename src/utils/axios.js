@@ -2,7 +2,7 @@ import axios from 'axios'
 import { mirrorRequest } from './refreshToken';
 import { useUserStore } from "@/stores/useUserStore"
 const Axios = axios.create({
-    baseURL: import.meta.env.NODE_ENV === "production" ?
+    baseURL: import.meta.env.PROD === "production" ?
         'https://lm-prod-api.codingtrainingacademy.com/api' :
         'http://127.0.0.1:8000/api',
     timeout: 10000,
