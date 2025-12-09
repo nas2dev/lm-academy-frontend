@@ -1,7 +1,11 @@
+<script setup>
+import LogoLight from '@/assets/images/logos/logo-light.svg?component'
+</script>
+
 <template>
   <div class="p-4">
     <a href="../../" class="text-nowrap">
-      <img src="../../../assets/images/logos/logo-light.svg" alt="Logo-Dark" />
+      <LogoLight />
     </a>
   </div>
   <div class="scroll-sidebar" data-simplebar="">
