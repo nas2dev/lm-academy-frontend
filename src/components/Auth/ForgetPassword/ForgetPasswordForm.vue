@@ -26,8 +26,22 @@ const handleSubmit = async () => {
     }
   } catch (error) {
     console.error('error', error)
-    const errorMessage = error?.response?.data?.message || 'Failed to send reset email'
-    toast.error(errorMessage)
+    const errorObj = error?.response?.data?.errors
+    if (errorObj && typeof errorObj === 'object') {
+      // Iterate through all validation errors and show each one
+      for (const field in errorObj) {
+        if (Array.isArray(errorObj[field])) {
+          errorObj[field].forEach((msg) => {
+            toast.error(msg)
+          })
+        } else if (errorObj[field]) {
+          toast.error(errorObj[field])
+        }
+      }
+    } else {
+      const errorMessage = error?.response?.data?.message || 'Failed to send reset email'
+      toast.error(errorMessage)
+    }
   } finally {
     isLoading.value = false
   }
