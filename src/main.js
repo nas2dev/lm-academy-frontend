@@ -14,6 +14,22 @@ import 'vue-tel-input/vue-tel-input.css';
 
 const app = createApp(App)
 
+
+if (import.meta.env.VITE_BASE_URL === 'http://127.0.0.1:8000') {
+    console.log('%cMade with ❤️ by CTA: Almedin & Valdrin Nasufi with Students of [2025 Gen]', 'color: #0085DB; font-size: 14px; font-weight: bold;')
+    console.info('https://codingtrainingacademy.com/')
+} else {
+    console.log('%cMade with ❤️ by CTA: Almedin & Valdrin Nasufi with Students of [2025 Gen]', 'color: #0085DB; font-size: 14px; font-weight: bold;')
+    console.info('https://codingtrainingacademy.com/')
+
+    // Disable console logs in production
+    console.log = () => { }
+    console.error = () => { }
+    console.warn = () => { }
+    console.info = () => { }
+    console.debug = () => { }
+}
+
 app.use(createPinia())
 app.use(router)
 app.use(Toast, {
