@@ -4,9 +4,9 @@ import LogoLight from '@/assets/images/logos/logo-light.svg?component'
 
 <template>
   <div class="p-4">
-    <a href=".../../" class="text-nowrap">
+    <router-link to="/" class="text-nowrap">
       <LogoLight />
-    </a>
+    </router-link>
   </div>
   <div class="scroll-sidebar" data-simplebar="">
     <nav class="w-full flex flex-col sidebar-nav px-4 mt-5">
