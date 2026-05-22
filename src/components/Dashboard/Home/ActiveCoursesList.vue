@@ -63,7 +63,7 @@ const openCourse = (courseId) => {
               :alt="course.title"
               class="w-full h-full object-cover"
             />
-            <div v-else class="w-full h-full flex items-center justify-center bg-blue-500">
+            <div v-else class="w-full h-full flex items-center justify-center bg-blue-50">
               <span class="text-blue-600 font-bold text-lg">{{ course.title?.charAt(0) }}</span>
             </div>
           </div>
@@ -73,7 +73,7 @@ const openCourse = (courseId) => {
             <h5 class="text-gray-500 font-semibold text-sm truncate">{{ course.title }}</h5>
             <div class="flex items-center gap-3 mt-2">
               <!-- Progress Bar -->
-              <div class="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div class="progress-bar-container flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   class="h-full rounded-full transition-all duration-500 ease-out"
                   :style="{
@@ -111,5 +111,13 @@ const openCourse = (courseId) => {
 <style scoped>
 .course-item {
   transition: background-color 0.15s ease;
+}
+
+.progress-bar-container {
+  transition: background-color 0.15s ease;
+}
+
+.course-item:hover .progress-bar-container {
+  background-color: #e5e7eb;
 }
 </style>
