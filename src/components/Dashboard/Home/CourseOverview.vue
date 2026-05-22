@@ -1,6 +1,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { getStorageUrl } from '@/utils/backendHelper'
 
 const props = defineProps({
   courseOverview: {
@@ -19,6 +20,10 @@ const limitedCourses = computed(() => {
 const openCourse = (courseId) => {
   const routeData = router.resolve({ name: 'AdminCourseModuleViewPage', params: { courseId } })
   window.open(routeData.href, '_blank')
+}
+
+const getThumbnailUrl = (thumbnail) => {
+  return thumbnail ? getStorageUrl(thumbnail, null) : null
 }
 </script>
 
@@ -43,8 +48,16 @@ const openCourse = (courseId) => {
           @click="openCourse(course.id)"
         >
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-lg flex items-center justify-center bg-blue-500">
-              <span class="text-blue-600 font-bold text-sm">{{ course.title?.charAt(0) }}</span>
+            <div class="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 flex items-center justify-center">
+              <img
+                v-if="getThumbnailUrl(course.thumbnail)"
+                :src="getThumbnailUrl(course.thumbnail)"
+                :alt="course.title"
+                class="w-full h-full object-cover"
+              />
+              <div v-else class="w-full h-full flex items-center justify-center bg-blue-50">
+                <span class="text-blue-600 font-bold text-sm">{{ course.title?.charAt(0) }}</span>
+              </div>
             </div>
             <h5 class="text-gray-500 font-medium text-sm">{{ course.title }}</h5>
           </div>
